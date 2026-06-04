@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TACLAR Admin</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
+.app{max-width:900px;margin:auto;padding:18px;min-height:100vh}
+.badge{float:right;padding:8px 12px;border-radius:20px;background:rgba(250,204,21,.16);border:1px solid rgba(250,204,21,.5);color:#facc15;font-weight:bold;font-size:13px}
+h1{margin:0;font-size:34px}.subtitle{color:#9ca3af;margin-bottom:18px}
+.card{background:#102629;border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:18px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.box{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:16px;text-align:center}
+.box small{display:block;color:#9ca3af;margin-bottom:8px}.box strong{font-size:22px;color:#facc15}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}
+th,td{border-bottom:1px solid rgba(255,255,255,.12);padding:10px;text-align:left}
+th{color:#94a3b8}
+button{border:0;border-radius:16px;padding:14px 18px;font-weight:bold;background:#14b8a6;color:#05201f;cursor:pointer}
+.note{color:#94a3b8;font-size:13px;line-height:1.4}
+@media(max-width:700px){.grid{grid-template-columns:1fr 1fr}table{font-size:12px}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="badge">ADMIN</div>
+<h1>TACLAR Admin</h1>
+<div class="subtitle">Tableau de bord — Taxi partagé / Groupage</div>
+
+<div class="card">
+<p class="note">
+Prototype Admin séparé. Pour l’instant, cette page prépare l’espace comptable.
+La prochaine étape sera de connecter l’interface chauffeur à cette page avec une base de données ou une synchronisation locale.
+</p>
+</div>
+
+<div class="grid">
+<div class="box"><small>Chauffeurs actifs</small><strong>0</strong></div>
+<div class="box"><small>Passagers</small><strong id="passengers">0</strong></div>
+<div class="box"><small>Montant total</small><strong id="total">0 FCFA</strong></div>
+<div class="box"><small>Commission 15%</small><strong id="commission">0 FCFA</strong></div>
+</div>
+
+<div class="card">
+<h2>Rapport des sessions</h2>
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>Chauffeur</th>
+<th>Axe</th>
+<th>Passagers</th>
+<th>Montant</th>
+<th>Commission</th>
+<th>Net chauffeur</th>
+</tr>
+</thead>
+<tbody id="rows">
+<tr><td colspan="7">Aucune session synchronisée pour le moment.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card">
+<h2>À connecter en V10</h2>
+<p class="note">
+Objectif : chaque tablette chauffeur enregistre les sessions, puis envoie automatiquement les données ici quand Internet est disponible.
+</p>
+<ul class="note">
+<li>Compte chauffeur + PIN</li>
+<li>Mode hors ligne</li>
+<li>Synchronisation automatique</li>
+<li>Export comptable journalier</li>
+<li>Suivi par véhicule et par chauffeur</li>
+</ul>
+</div>
+
+</div>
+</body>
+</html>
