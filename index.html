@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>TACLAR Groupage v0.6</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #061416; color: white; }
+    .app { max-width: 430px; margin: auto; padding: 16px; min-height: 100vh; }
+    .badge { float: right; padding: 8px 12px; border-radius: 20px; background: rgba(20,184,166,.18); border: 1px solid rgba(20,184,166,.5); color: #5eead4; font-weight: bold; font-size: 13px; }
+    h1 { margin: 0; font-size: 32px; letter-spacing: 1px; }
+    .subtitle { color: #9ca3af; margin-bottom: 8px; }
+    .status { color: #5eead4; font-size: 13px; margin-bottom: 14px; min-height: 18px; }
+    .card { background: #102629; border: 1px solid rgba(255,255,255,.12); border-radius: 20px; padding: 16px; margin-bottom: 14px; }
+    label { color: #9ca3af; font-size: 13px; display: block; margin-bottom: 6px; }
+    select { width: 100%; padding: 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,.15); background: #061416; color: white; font-size: 17px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+    .box { background: rgba(255,255,255,.06); border-radius: 18px; padding: 16px 10px; text-align: center; border: 1px solid rgba(255,255,255,.08); }
+    .box small { display: block; color: #9ca3af; margin-bottom: 6px; font-size: 12px; }
+    .box strong { font-size: 24px; }
+    .yellow { color: #facc15; }
+    .green { color: #5eead4; }
+
+    button { width: 100%; min-height: 58px; border: none; border-radius: 18px; font-size: 19px; font-weight: bold; background: #14b8a6; color: #05201f; cursor: pointer; margin-bottom: 10px; }
+    button:active { transform: scale(.97); }
+    .btn-yellow { background: #facc15; color: #111827; }
+    .btn-dark { background: rgba(255,255,255,.08); color: white; border: 1px solid rgba(255,255,255,.12); font-size: 16px; }
+    .btn-red { background: rgba(239,68,68,.18); color: #fecaca; border: 1px solid rgba(239,68,68,.4); font-size: 16px; }
+    .btn-small { min-height: 44px; border-radius: 14px; font-size: 14px; padding: 8px; margin-bottom: 0; }
+
+    .seatMap { display: grid; gap: 12px; margin-top: 8px; }
+    .frontRow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; }
+    .backRow { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .driverSeat { background: rgba(255,255,255,.05); border: 1px dashed rgba(255,255,255,.22); border-radius: 18px; padding: 16px 8px; text-align: center; color: #94a3b8; min-height: 86px; display:flex; align-items:center; justify-content:center; font-weight:bold; }
+    .seatBtn { min-height: 86px; margin-bottom: 0; display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.15; }
+    .seatBtn .code { font-size: 24px; }
+    .seatBtn .amount { font-size: 13px; margin-top: 6px; opacity:.9; }
+    .seatFree { background: rgba(255,255,255,.08); color: white; border: 1px solid rgba(255,255,255,.14); }
+    .seatBusy { background: #14b8a6; color: #05201f; border: 1px solid rgba(255,255,255,.18); }
+    .seatDropped { background: rgba(255,255,255,.06); color: #94a3b8; }
+
+    .fareGrid { display: none; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .fareGrid button { margin-bottom: 0; min-height: 54px; }
+    .seatPanel { display: none; margin-top: 12px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.10); border-radius: 18px; padding: 12px; }
+    .seatPanelTitle { font-weight: bold; margin-bottom: 10px; }
+    .adjustGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .adjustGrid button { margin-bottom: 0; }
+    .fullGrid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .fullGrid button { margin-bottom: 0; }
+    .disabled { opacity: .45; pointer-events: none; }
+
+    .list { display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; }
+    .row { display: flex; justify-content: space-between; background: rgba(255,255,255,.06); padding: 12px; border-radius: 14px; font-size: 14px; border: 1px solid rgba(255,255,255,.06); }
+    .row b { color: #facc15; }
+    .muted { color: #94a3b8; }
+
+    .footer { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .footer button { margin-bottom: 0; }
+
+    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 10; padding: 18px; align-items: center; justify-content: center; }
+    .modal { width: 100%; max-width: 390px; background: #102629; border-radius: 24px; padding: 20px; border: 1px solid rgba(255,255,255,.15); }
+    .modal h2 { margin-top: 0; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="badge">V0.6</div>
+    <h1>TACLAR</h1>
+    <div class="subtitle">Taxi partagé / Groupage</div>
+    <div class="status" id="status">Choisir un axe puis démarrer</div>
+
+    <div class="card">
+      <div class="grid2">
+        <div>
+          <label>Axe</label>
+          <select id="route">
+            <option>Okala → Aéroport</option>
+            <option>Akanda → Centre-ville</option>
+            <option>Nzeng-Ayong → Aéroport</option>
+            <option>Charbonnages → Louis</option>
+            <option>Owendo → Centre-ville</option>
+          </select>
+        </div>
+        <div>
+          <label>Type véhicule</label>
+          <select id="vehicleType">
+            <option value="4">Corolla - 4 places</option>
+            <option value="5">Taxi - 5 places</option>
+          </select>
+        </div>
+      </div>
+      <br>
+      <button id="startBtn">Démarrer la session</button>
+    </div>
+
+    <div class="summary">
+      <div class="box">
+        <small>À bord</small>
+        <strong><span id="onboard">0</span>/<span id="cap">4</span></strong>
+      </div>
+      <div class="box">
+        <small>Total encaissé</small>
+        <strong class="yellow" id="total">0 FCFA</strong>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="box">
+        <small>Transportés</small>
+        <strong class="green" id="transported">0</strong>
+      </div>
+      <div class="box">
+        <small>Places libres</small>
+        <strong id="freeSeats">4</strong>
+      </div>
+    </div>
+
+    <div class="card">
+      <label>Plan des sièges</label>
+      <div class="seatMap">
+        <div class="frontRow">
+          <div class="driverSeat">CHAUFFEUR</div>
+          <button class="seatBtn seatFree" data-seat="SP"><span class="code">SP</span><span class="amount">Libre</span></button>
+        </div>
+        <div class="backRow">
+          <button class="seatBtn seatFree" data-seat="SG"><span class="code">SG</span><span class="amount">Libre</span></button>
+          <button class="seatBtn seatFree" data-seat="SM"><span class="code">SM</span><span class="amount">Libre</span></button>
+          <button class="seatBtn seatFree" data-seat="SD"><span class="code">SD</span><span class="amount">Libre</span></button>
+        </div>
+      </div>
+
+      <div id="farePanel" class="fareGrid">
+        <button class="fare" data-amount="200">200</button>
+        <button class="fare" data-amount="500">500</button>
+        <button class="fare" data-amount="1000">1000</button>
+        <button class="fare" data-amount="1500">1500</button>
+        <button class="fare" data-amount="2000">2000</button>
+        <button class="fare" data-amount="2500">2500</button>
+        <button class="fare" data-amount="3000">3000</button>
+        <button class="fare" data-amount="3500">3500</button>
+        <button class="fare" data-amount="4000">4000</button>
+        <button class="fare btn-yellow" data-amount="5000">5000</button>
+      </div>
+
+      <div id="seatPanel" class="seatPanel">
+        <div class="seatPanelTitle" id="seatPanelTitle">Siège</div>
+        <div class="adjustGrid">
+          <button id="plus1000">+1000</button>
+          <button id="minus1000" class="btn-yellow">-1000</button>
+        </div>
+        <div class="fullGrid">
+          <button id="dropSeat" class="btn-dark">Descendu / libérer siège</button>
+          <button id="cancelSeat" class="btn-red">Annuler passager</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <label>Historique</label>
+      <div class="list" id="history">Aucun passager enregistré.</div>
+    </div>
+
+    <div class="footer">
+      <button class="btn-red" id="resetView">Fermer panneau</button>
+      <button class="btn-dark" id="close">Clôturer session</button>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="modalBg">
+    <div class="modal">
+      <h2>Session clôturée</h2>
+      <p><b>Axe :</b> <span id="mRoute"></span></p>
+      <p><b>Début :</b> <span id="mStart"></span></p>
+      <p><b>Fin :</b> <span id="mEnd"></span></p>
+      <p><b>Passagers transportés :</b> <span id="mTransported"></span></p>
+      <p><b>Total encaissé :</b> <span id="mTotal"></span></p>
+      <p><b>Commission TACLAR 15% :</b> <span id="mCommission"></span></p>
+      <p><b>Revenu chauffeur :</b> <span id="mDriver"></span></p>
+      <button id="newSession">Nouvelle session</button>
+    </div>
+  </div>
+
+<script>
+var active = false;
+var startTime = null;
+var selectedSeat = null;
+var seats = {
+  SP: null,
+  SG: null,
+  SM: null,
+  SD: null
+};
+var history = [];
+var nextId = 1;
+
+function money(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " FCFA"; }
+function nowText() {
+  var d = new Date();
+  return d.getHours().toString().padStart(2,"0") + ":" + d.getMinutes().toString().padStart(2,"0");
+}
+function seatCodes() { return ["SP", "SG", "SM", "SD"]; }
+function onboardCount() { return seatCodes().filter(function(s){ return seats[s] !== null; }).length; }
+function total() { return history.reduce(function(sum, h){ return h.status !== "annulé" ? sum + h.amount : sum; }, 0); }
+function transportedCount() { return history.filter(function(h){ return h.status !== "annulé"; }).length; }
+
+function render() {
+  var cap = seatCodes().length;
+  var on = onboardCount();
+  document.getElementById("onboard").textContent = on;
+  document.getElementById("cap").textContent = cap;
+  document.getElementById("freeSeats").textContent = cap - on;
+  document.getElementById("transported").textContent = transportedCount();
+  document.getElementById("total").textContent = money(total());
+
+  seatCodes().forEach(function(code) {
+    var btn = document.querySelector("[data-seat='" + code + "']");
+    var passenger = seats[code];
+    btn.className = "seatBtn " + (passenger ? "seatBusy" : "seatFree");
+    btn.querySelector(".amount").textContent = passenger ? money(passenger.amount) : "Libre";
+  });
+
+  var h = document.getElementById("history");
+  if (history.length === 0) {
+    h.textContent = "Aucun passager enregistré.";
+  } else {
+    h.innerHTML = "";
+    history.slice().reverse().forEach(function(item) {
+      var row = document.createElement("div");
+      row.className = "row";
+      row.innerHTML = "<span>#" + item.id + " · " + item.seat + " · " + item.status + "<br><span class='muted'>" + item.time + "</span></span><b>" + money(item.amount) + "</b>";
+      h.appendChild(row);
+    });
+  }
+}
+
+function hidePanels() {
+  document.getElementById("farePanel").style.display = "none";
+  document.getElementById("seatPanel").style.display = "none";
+}
+
+function startSession() {
+  active = true;
+  startTime = nowText();
+  seats = { SP: null, SG: null, SM: null, SD: null };
+  history = [];
+  nextId = 1;
+  document.getElementById("route").disabled = true;
+  document.getElementById("vehicleType").disabled = true;
+  document.getElementById("startBtn").className = "disabled";
+  document.getElementById("status").textContent = "Session active depuis " + startTime;
+  hidePanels();
+  render();
+}
+
+function chooseSeat(code) {
+  if (!active) {
+    alert("Démarre d'abord la session.");
+    return;
+  }
+  selectedSeat = code;
+  hidePanels();
+
+  if (seats[code] === null) {
+    document.getElementById("status").textContent = "Siège " + code + " libre : choisir le tarif";
+    document.getElementById("farePanel").style.display = "grid";
+  } else {
+    document.getElementById("status").textContent = "Siège " + code + " occupé";
+    document.getElementById("seatPanelTitle").textContent = code + " — " + money(seats[code].amount);
+    document.getElementById("seatPanel").style.display = "block";
+  }
+}
+
+function addPassenger(amount) {
+  if (!selectedSeat) return;
+  if (seats[selectedSeat] !== null) return;
+  var p = { id: nextId++, seat: selectedSeat, amount: amount, boardTime: nowText() };
+  seats[selectedSeat] = p;
+  history.push({ id: p.id, seat: selectedSeat, amount: amount, status: "à bord", time: p.boardTime });
+  document.getElementById("status").textContent = selectedSeat + " ajouté : " + money(amount);
+  hidePanels();
+  render();
+}
+
+function updateHistoryAmount(id, amount) {
+  history.forEach(function(h) {
+    if (h.id === id && h.status !== "descendu" && h.status !== "annulé") h.amount = amount;
+  });
+}
+
+function adjustSeat(delta) {
+  if (!selectedSeat || seats[selectedSeat] === null) return;
+  var p = seats[selectedSeat];
+  var newAmount = p.amount + delta;
+  if (newAmount < 200) {
+    alert("Le minimum est 200 FCFA.");
+    return;
+  }
+  p.amount = newAmount;
+  updateHistoryAmount(p.id, newAmount);
+  document.getElementById("seatPanelTitle").textContent = selectedSeat + " — " + money(p.amount);
+  document.getElementById("status").textContent = selectedSeat + " ajusté : " + money(p.amount);
+  render();
+}
+
+function dropSeat() {
+  if (!selectedSeat || seats[selectedSeat] === null) return;
+  var p = seats[selectedSeat];
+  history.forEach(function(h) {
+    if (h.id === p.id) {
+      h.status = "descendu";
+      h.time = h.time + " → descendu " + nowText();
+      h.amount = p.amount;
+    }
+  });
+  seats[selectedSeat] = null;
+  document.getElementById("status").textContent = selectedSeat + " libéré";
+  hidePanels();
+  render();
+}
+
+function cancelSeat() {
+  if (!selectedSeat || seats[selectedSeat] === null) return;
+  var p = seats[selectedSeat];
+  history.forEach(function(h) {
+    if (h.id === p.id) {
+      h.status = "annulé";
+      h.amount = 0;
+      h.time = h.time + " → annulé " + nowText();
+    }
+  });
+  seats[selectedSeat] = null;
+  document.getElementById("status").textContent = selectedSeat + " annulé";
+  hidePanels();
+  render();
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  document.getElementById("startBtn").onclick = startSession;
+  document.querySelectorAll("[data-seat]").forEach(function(btn) {
+    btn.onclick = function(){ chooseSeat(this.getAttribute("data-seat")); };
+  });
+  document.querySelectorAll(".fare").forEach(function(btn) {
+    btn.onclick = function(){ addPassenger(Number(this.getAttribute("data-amount"))); };
+  });
+  document.getElementById("plus1000").onclick = function(){ adjustSeat(1000); };
+  document.getElementById("minus1000").onclick = function(){ adjustSeat(-1000); };
+  document.getElementById("dropSeat").onclick = dropSeat;
+  document.getElementById("cancelSeat").onclick = cancelSeat;
+  document.getElementById("resetView").onclick = function(){ selectedSeat = null; hidePanels(); };
+
+  document.getElementById("close").onclick = function() {
+    if (!active || transportedCount() === 0) {
+      alert("Aucune session active à clôturer.");
+      return;
+    }
+    var t = total();
+    var c = Math.round(t * 0.15);
+    var d = t - c;
+    document.getElementById("mRoute").textContent = document.getElementById("route").value;
+    document.getElementById("mStart").textContent = startTime;
+    document.getElementById("mEnd").textContent = nowText();
+    document.getElementById("mTransported").textContent = transportedCount();
+    document.getElementById("mTotal").textContent = money(t);
+    document.getElementById("mCommission").textContent = money(c);
+    document.getElementById("mDriver").textContent = money(d);
+    document.getElementById("modalBg").style.display = "flex";
+  };
+
+  document.getElementById("newSession").onclick = function() {
+    active = false;
+    startTime = null;
+    selectedSeat = null;
+    seats = { SP: null, SG: null, SM: null, SD: null };
+    history = [];
+    nextId = 1;
+    document.getElementById("route").disabled = false;
+    document.getElementById("vehicleType").disabled = false;
+    document.getElementById("startBtn").className = "";
+    document.getElementById("modalBg").style.display = "none";
+    document.getElementById("status").textContent = "Choisir un axe puis démarrer";
+    hidePanels();
+    render();
+  };
+
+  render();
+});
+</script>
+</body>
+</html>
