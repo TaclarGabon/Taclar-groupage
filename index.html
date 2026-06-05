@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V10.2</title><style>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V10.4</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:430px;margin:auto;padding:10px;min-height:100vh}
@@ -26,9 +26,15 @@ button{width:100%;min-height:44px;border:none;border-radius:14px;font-size:16px;
 table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{border-bottom:1px solid rgba(255,255,255,.12);padding:10px;text-align:left}th{color:#94a3b8}
 .statuspill{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:bold;font-size:12px}.pillgreen{background:rgba(34,197,94,.18);color:#86efac}.pillorange{background:rgba(250,204,21,.18);color:#fde68a}.pillgray{background:rgba(148,163,184,.18);color:#cbd5e1}
 @media(max-width:700px){.wide{max-width:430px}.grid2{grid-template-columns:1fr 1fr}table{font-size:12px}}
+.cashDisplay{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:14px;text-align:center;font-size:26px;font-weight:bold;margin:10px 0;color:#facc15}
+.keypad{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+.keypad button{min-height:50px;margin:0;font-size:20px}
+.warningBox{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);border-radius:16px;padding:12px;margin:10px 0;color:#fecaca}
+.reasonGrid{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
+.reasonGrid button{margin:0}
 </style></head>
 <body><div class="app">
-<div class="badge">V10.2</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div>
+<div class="badge">V10.4</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div>
 <div class="card"><div class="grid2"><div><label>Axe</label><select id="route"><option>Okala → Aéroport</option><option>Akanda → Centre-ville</option><option>Nzeng-Ayong → Aéroport</option><option>Charbonnages → Louis</option><option>Owendo → Centre-ville</option><option>Sans axe fixe</option></select></div><div><label>Type véhicule</label><select id="vehicleType"><option value="4">Corolla - 4 places</option></select></div></div><br><label>Plaque véhicule</label><input id="plateInput" placeholder="Ex : LBV-1234"><br><br><label>Nom chauffeur</label><input id="driverNameInput" placeholder="Ex : Paul"><br><br><label>PIN chauffeur</label><input id="driverPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="1234"><br><br><button id="startBtn">Démarrer la session</button></div>
 <div class="summary"><div class="box"><small>À bord</small><strong><span id="onboard">0</span>/4</strong></div><div class="box"><small>Places libres</small><strong class="green" id="freeSeats">4</strong></div></div>
 <div class="card"><label>Plan des sièges</label><div class="seatMap"><div class="frontRow"><div class="driverSeat"><div><div style="font-size:12px">CHAUFFEUR</div><div id="driverNameDisplay" style="font-size:19px;font-weight:900">---</div></div></div><button class="seatBtn seatFree" id="seat-SP" data-seat="SP"><span class="code">SP</span><span class="amount">Libre</span></button></div><div class="backRow"><button class="seatBtn seatFree" id="seat-SG"><span class="code">SG</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SM"><span class="code">SM</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SD"><span class="code">SD</span><span class="amount">Libre</span></button></div></div>
@@ -38,11 +44,46 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 <div class="card"><label>Dernières actions</label><div class="list" id="publicHistory">Aucune action.</div></div>
 <div class="footer"><button class="btn-dark" id="infoBtn">Info</button><button class="btn-red" id="incidentBtn">Incident</button></div><br><button class="btn-dark" id="close">Clôturer session</button>
 </div>
+
+<div class="modal-bg" id="cashModal"><div class="modal">
+<h2>Vérification caisse</h2>
+<p class="muted">Avant clôture, vérifier que le cash réel correspond au montant enregistré.</p>
+<div class="box"><small>Montant app</small><strong id="cashExpected">0 FCFA</strong></div>
+<label>Cash réel</label>
+<div class="cashDisplay" id="cashTyped">0 FCFA</div>
+<div class="keypad">
+<button class="numKey" data-n="1">1</button><button class="numKey" data-n="2">2</button><button class="numKey" data-n="3">3</button>
+<button class="numKey" data-n="4">4</button><button class="numKey" data-n="5">5</button><button class="numKey" data-n="6">6</button>
+<button class="numKey" data-n="7">7</button><button class="numKey" data-n="8">8</button><button class="numKey" data-n="9">9</button>
+<button id="cashClear" class="btn-red">Effacer</button><button class="numKey" data-n="0">0</button><button id="cashOk">OK</button>
+</div>
+<button class="btn-dark" id="cashCancel">Annuler</button>
+</div></div>
+
+<div class="modal-bg" id="gapModal"><div class="modal">
+<h2>Écart caisse</h2>
+<div class="warningBox" id="gapText">Écart détecté.</div>
+<button id="gapCorrect" class="btn-dark">Corriger</button>
+<button id="gapJustify" class="btn-yellow">Clôturer avec justification</button>
+</div></div>
+
+<div class="modal-bg" id="reasonModal"><div class="modal">
+<h2>Justification</h2>
+<p class="muted">Choisir une raison pour clôturer malgré l’écart.</p>
+<div class="reasonGrid">
+<button class="reasonChoice" data-reason="Erreur de saisie">Erreur de saisie</button>
+<button class="reasonChoice" data-reason="Monnaie manquante">Monnaie manquante</button>
+<button class="reasonChoice" data-reason="Client non payé">Client non payé</button>
+<button class="reasonChoice" data-reason="Autre">Autre</button>
+</div>
+<button class="btn-dark" id="reasonCancel">Annuler</button>
+</div></div>
+
 <div class="modal-bg" id="incidentModal"><div class="modal"><h2>Incident</h2><p class="muted">Choisir la raison</p><div id="incidentChoices"></div><button class="btn-dark" id="incidentCancel">Annuler</button></div></div>
 <div class="modal-bg" id="pinModal"><div class="modal"><h2>Info</h2><p class="muted">PIN chauffeur</p><input id="pinInput" type="password" inputmode="numeric" maxlength="4"><button id="pinSubmit">Valider</button><button class="btn-dark" id="pinCancel">Annuler</button></div></div>
 <div class="modal-bg" id="infoModal"><div class="modal"><h2>Info du jour</h2><div class="grid2"><div class="box"><small>Chauffeur</small><strong id="infoDriver">---</strong></div><div class="box"><small>Passagers</small><strong id="infoPassengers">0</strong></div><div class="box"><small>Montant</small><strong id="infoTotal">0</strong></div><div class="box"><small>Début</small><strong id="infoStart">--:--</strong></div></div><br><label>Historique détaillé</label><div class="list" id="privateHistory"></div><br><button class="btn-dark" id="infoClose">Fermer</button></div></div>
 <script>
-var active=false,selectedSeat=null,startTime=null,driverName="",driverPin="1234",plateNumber="",currentIncident=null;
+var active=false,selectedSeat=null,startTime=null,driverName="",driverPin="1234",plateNumber="",currentIncident=null,cashInput="",pendingGap=0,pendingCash=0;
 var seats={SP:{amount:0,occupied:false},SG:{amount:0,occupied:false},SM:{amount:0,occupied:false},SD:{amount:0,occupied:false}};
 var seatList=["SP","SG","SM","SD"],publicActions=[],privateActions=[],incidentActions=[];
 var incidentTypes=["Contrôle police","Panne véhicule","Embouteillage important","Agression / vol","Accident","Client problématique","Manque carburant","Pause chauffeur","Route bloquée","Autre"];
@@ -68,19 +109,43 @@ el("plateInput").value="";el("driverNameInput").value="";el("driverPinInput").va
 el("status").textContent="Choisir un axe puis démarrer";
 hidePanels();render();
 }
+
 function closeSession(){
 if(!active)return alert("Aucune session active.");
-if(countOnboard()>0)return alert("Impossible de clôturer : il reste des passagers à bord. Libère d’abord les sièges occupés.");
+if(countOnboard()>0)return alert("Sièges occupés.\nLibérez les sièges avant clôture.");
 if(privateActions.filter(a=>a.status==="descendu").length===0)return alert("Aucun passager descendu à clôturer.");
-if(!confirm("Voulez-vous vraiment clôturer cette session ?"))return;
+cashInput="";
+el("cashExpected").textContent=money(totalAmount());
+el("cashTyped").textContent=money(0);
+el("cashModal").style.display="flex";
+}
+function completeClose(reason,cashReal,gap){
 var t=totalAmount();
-var session={date:new Date().toLocaleDateString(),time:nowText(),driver:driverName,plate:plateNumber,route:el("route").value,passengers:passengersCount(),total:t,commission:Math.round(t*0.15),net:t-Math.round(t*0.15),incidents:incidentActions};
+var session={date:new Date().toLocaleDateString(),time:nowText(),driver:driverName,plate:plateNumber,route:el("route").value,passengers:passengersCount(),total:t,cashReal:cashReal,gap:gap,justification:reason||"",commission:Math.round(t*0.15),net:t-Math.round(t*0.15),incidents:incidentActions};
 var sessions=JSON.parse(localStorage.getItem("taclar_sessions")||"[]");
 sessions.push(session);
 localStorage.setItem("taclar_sessions",JSON.stringify(sessions));
 localStorage.setItem("taclar_live",JSON.stringify({driver:session.driver,route:session.route,vehicle:plateNumber||"Taxi 001",status:"closed",onboard:0,free:4,start:session.time,last:"Session clôturée",incident:null,updated:nowText()}));
-alert("Session clôturée et envoyée vers Admin local.");
+alert("Session clôturée.\nDonnées envoyées à l'Admin local.");
 resetForNewSession();
 }
-window.addEventListener("load",()=>{incidentTypes.forEach(i=>{var b=document.createElement("button");b.textContent=i;b.onclick=()=>reportIncident(i);el("incidentChoices").appendChild(b)});el("startBtn").onclick=startSession;seatList.forEach(c=>el("seat-"+c).onclick=()=>chooseSeat(c));document.querySelectorAll(".fare").forEach(b=>b.onclick=()=>addPassenger(Number(b.dataset.amount)));el("plus500").onclick=()=>adjust(500);el("minus500").onclick=()=>adjust(-500);el("plus1000").onclick=()=>adjust(1000);el("minus1000").onclick=()=>adjust(-1000);el("dropSeat").onclick=dropSeat;el("incidentBtn").onclick=()=>{if(!active)return alert("Démarre d’abord la session.");el("incidentModal").style.display="flex"};el("incidentCancel").onclick=()=>el("incidentModal").style.display="none";el("resolveIncident").onclick=()=>{currentIncident=null;el("status").textContent="Incident résolu";render()};el("infoBtn").onclick=()=>{el("pinInput").value="";el("pinModal").style.display="flex"};el("pinSubmit").onclick=()=>{if(el("pinInput").value===driverPin){el("pinModal").style.display="none";showInfo()}else alert("PIN incorrect.")};el("pinCancel").onclick=()=>el("pinModal").style.display="none";el("infoClose").onclick=()=>el("infoModal").style.display="none";el("close").onclick=closeSession;render()})
+function resetForNewSession(){
+active=false;selectedSeat=null;startTime=null;driverName="";driverPin="1234";plateNumber="";currentIncident=null;cashInput="";pendingGap=0;pendingCash=0;
+seatList.forEach(s=>{seats[s].amount=0;seats[s].occupied=false});
+publicActions=[];privateActions=[];incidentActions=[];
+el("plateInput").disabled=false;el("driverNameInput").disabled=false;el("driverPinInput").disabled=false;el("route").disabled=false;el("vehicleType").disabled=false;el("startBtn").disabled=false;
+el("plateInput").value="";el("driverNameInput").value="";el("driverPinInput").value="";el("driverNameDisplay").textContent="---";
+el("status").textContent="Choisir un axe puis démarrer";
+hidePanels();render();
+}
+window.addEventListener("load",()=>{incidentTypes.forEach(i=>{var b=document.createElement("button");b.textContent=i;b.onclick=()=>reportIncident(i);el("incidentChoices").appendChild(b)});el("startBtn").onclick=startSession;seatList.forEach(c=>el("seat-"+c).onclick=()=>chooseSeat(c));document.querySelectorAll(".fare").forEach(b=>b.onclick=()=>addPassenger(Number(b.dataset.amount)));el("plus500").onclick=()=>adjust(500);el("minus500").onclick=()=>adjust(-500);el("plus1000").onclick=()=>adjust(1000);el("minus1000").onclick=()=>adjust(-1000);el("dropSeat").onclick=dropSeat;el("incidentBtn").onclick=()=>{if(!active)return alert("Démarre d’abord la session.");el("incidentModal").style.display="flex"};el("incidentCancel").onclick=()=>el("incidentModal").style.display="none";el("resolveIncident").onclick=()=>{currentIncident=null;el("status").textContent="Incident résolu";render()};el("infoBtn").onclick=()=>{el("pinInput").value="";el("pinModal").style.display="flex"};el("pinSubmit").onclick=()=>{if(el("pinInput").value===driverPin){el("pinModal").style.display="none";showInfo()}else alert("PIN incorrect.")};el("pinCancel").onclick=()=>el("pinModal").style.display="none";el("infoClose").onclick=()=>el("infoModal").style.display="none";el("close").onclick=closeSession;
+document.querySelectorAll(".numKey").forEach(b=>b.onclick=()=>{cashInput+=b.dataset.n;cashInput=cashInput.replace(/^0+/,"");if(cashInput==="")cashInput="0";el("cashTyped").textContent=money(Number(cashInput))});
+el("cashClear").onclick=()=>{cashInput="";el("cashTyped").textContent=money(0)};
+el("cashCancel").onclick=()=>{el("cashModal").style.display="none"};
+el("cashOk").onclick=()=>{var expected=totalAmount();var real=Number(cashInput||"0");pendingCash=real;pendingGap=expected-real;if(real===expected){el("cashModal").style.display="none";completeClose("",real,0)}else{el("cashModal").style.display="none";el("gapText").textContent="Écart caisse : "+money(Math.abs(pendingGap))+(pendingGap>0?" manquant":" en plus");el("gapModal").style.display="flex"}};
+el("gapCorrect").onclick=()=>{el("gapModal").style.display="none";cashInput="";el("cashTyped").textContent=money(0);el("cashModal").style.display="flex"};
+el("gapJustify").onclick=()=>{el("gapModal").style.display="none";el("reasonModal").style.display="flex"};
+document.querySelectorAll(".reasonChoice").forEach(b=>b.onclick=()=>{el("reasonModal").style.display="none";completeClose(b.dataset.reason,pendingCash,pendingGap)});
+el("reasonCancel").onclick=()=>{el("reasonModal").style.display="none";el("gapModal").style.display="flex"};
+render()})
 </script></body></html>
