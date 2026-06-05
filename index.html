@@ -1,26 +1,26 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V10.1</title><style>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V10.2</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
-.app{max-width:430px;margin:auto;padding:16px;min-height:100vh}
+.app{max-width:430px;margin:auto;padding:10px;min-height:100vh}
 .wide{max-width:980px}
 .badge{float:right;padding:8px 12px;border-radius:20px;background:rgba(20,184,166,.18);border:1px solid rgba(20,184,166,.5);color:#5eead4;font-weight:bold;font-size:13px}
-h1{margin:0;font-size:32px}.subtitle,.muted{color:#9ca3af}.status{color:#5eead4;font-size:13px;margin-bottom:14px;min-height:18px}
-.card{background:#102629;border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:16px;margin-bottom:14px}
+h1{margin:0;font-size:28px}.subtitle,.muted{color:#9ca3af}.status{color:#5eead4;font-size:13px;margin-bottom:14px;min-height:18px}
+.card{background:#102629;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:10px;margin-bottom:8px}
 label{color:#9ca3af;font-size:13px;display:block;margin-bottom:6px}
-select,input{width:100%;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:#061416;color:white;font-size:17px}
+select,input{width:100%;padding:9px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:#061416;color:white;font-size:15px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-.box{background:rgba(255,255,255,.06);border-radius:18px;padding:16px 10px;text-align:center;border:1px solid rgba(255,255,255,.08)}
-.box small{display:block;color:#9ca3af;margin-bottom:6px;font-size:12px}.box strong{font-size:24px}.green{color:#5eead4}.yellow{color:#facc15}
-button{width:100%;min-height:58px;border:none;border-radius:18px;font-size:18px;font-weight:bold;background:#14b8a6;color:#05201f;cursor:pointer;margin-bottom:10px}
+.box{background:rgba(255,255,255,.06);border-radius:14px;padding:9px 8px;text-align:center;border:1px solid rgba(255,255,255,.08)}
+.box small{display:block;color:#9ca3af;margin-bottom:6px;font-size:12px}.box strong{font-size:20px}.green{color:#5eead4}.yellow{color:#facc15}
+button{width:100%;min-height:44px;border:none;border-radius:14px;font-size:16px;font-weight:bold;background:#14b8a6;color:#05201f;cursor:pointer;margin-bottom:6px}
 .btn-yellow{background:#facc15;color:#111827}.btn-dark{background:rgba(255,255,255,.08);color:white;border:1px solid rgba(255,255,255,.12)}.btn-red{background:rgba(239,68,68,.18);color:#fecaca;border:1px solid rgba(239,68,68,.4)}
 .seatMap{display:grid;gap:12px;margin-top:8px}.frontRow{display:grid;grid-template-columns:1fr 1fr;gap:12px}.backRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.driverSeat{background:#facc15;border-radius:18px;min-height:86px;display:flex;align-items:center;justify-content:center;text-align:center;color:#111827;font-weight:bold}
-.seatBtn{min-height:86px;margin-bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15}.seatBtn .code{font-size:24px}.seatBtn .amount{font-size:13px;margin-top:6px}
+.driverSeat{background:#facc15;border-radius:14px;min-height:68px;display:flex;align-items:center;justify-content:center;text-align:center;color:#111827;font-weight:bold}
+.seatBtn{min-height:68px;margin-bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}.seatBtn .code{font-size:21px}.seatBtn .amount{font-size:13px;margin-top:6px}
 .seatFree{background:rgba(255,255,255,.08);color:white;border:1px solid rgba(255,255,255,.14)}.seatBusy{background:#14b8a6;color:#05201f;border:1px solid rgba(255,255,255,.18)}
-.fareGrid{display:none;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.fareGrid button{margin-bottom:0;min-height:54px}
+.fareGrid{display:none;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.fareGrid button{margin-bottom:0;min-height:42px}
 .seatPanel{display:none;margin-top:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:12px}.adjustGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
-.list{display:flex;flex-direction:column;gap:8px;max-height:210px;overflow-y:auto}.row{display:flex;justify-content:space-between;background:rgba(255,255,255,.06);padding:12px;border-radius:14px;font-size:14px;border:1px solid rgba(255,255,255,.06)}.row b{color:#5eead4}
+.list{display:flex;flex-direction:column;gap:6px;max-height:150px;overflow-y:auto}.row{display:flex;justify-content:space-between;background:rgba(255,255,255,.06);padding:8px;border-radius:12px;font-size:13px;border:1px solid rgba(255,255,255,.06)}.row b{color:#5eead4}
 .footer{display:grid;grid-template-columns:1fr 1fr;gap:12px}.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10;padding:18px;align-items:center;justify-content:center}.modal{width:100%;max-width:390px;background:#102629;border-radius:24px;padding:20px;border:1px solid rgba(255,255,255,.15);max-height:88vh;overflow:auto}
 .incidentAlert{display:none;background:rgba(239,68,68,.16);border:1px solid rgba(239,68,68,.45);color:#fecaca;border-radius:18px;padding:14px;margin-bottom:14px;font-weight:bold}.incidentAlert small{display:block;color:#fca5a5;margin-top:4px;font-weight:normal}
 table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{border-bottom:1px solid rgba(255,255,255,.12);padding:10px;text-align:left}th{color:#94a3b8}
@@ -28,8 +28,8 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 @media(max-width:700px){.wide{max-width:430px}.grid2{grid-template-columns:1fr 1fr}table{font-size:12px}}
 </style></head>
 <body><div class="app">
-<div class="badge">V10.1</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div>
-<div class="card"><div class="grid2"><div><label>Axe</label><select id="route"><option>Okala → Aéroport</option><option>Akanda → Centre-ville</option><option>Nzeng-Ayong → Aéroport</option><option>Charbonnages → Louis</option><option>Owendo → Centre-ville</option><option>Sans axe fixe</option></select></div><div><label>Type véhicule</label><select id="vehicleType"><option value="4">Corolla - 4 places</option></select></div></div><br><label>Nom chauffeur</label><input id="driverNameInput" placeholder="Ex : Paul"><br><br><label>PIN chauffeur</label><input id="driverPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="1234"><br><br><button id="startBtn">Démarrer la session</button></div>
+<div class="badge">V10.2</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div>
+<div class="card"><div class="grid2"><div><label>Axe</label><select id="route"><option>Okala → Aéroport</option><option>Akanda → Centre-ville</option><option>Nzeng-Ayong → Aéroport</option><option>Charbonnages → Louis</option><option>Owendo → Centre-ville</option><option>Sans axe fixe</option></select></div><div><label>Type véhicule</label><select id="vehicleType"><option value="4">Corolla - 4 places</option></select></div></div><br><label>Plaque véhicule</label><input id="plateInput" placeholder="Ex : LBV-1234"><br><br><label>Nom chauffeur</label><input id="driverNameInput" placeholder="Ex : Paul"><br><br><label>PIN chauffeur</label><input id="driverPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="1234"><br><br><button id="startBtn">Démarrer la session</button></div>
 <div class="summary"><div class="box"><small>À bord</small><strong><span id="onboard">0</span>/4</strong></div><div class="box"><small>Places libres</small><strong class="green" id="freeSeats">4</strong></div></div>
 <div class="card"><label>Plan des sièges</label><div class="seatMap"><div class="frontRow"><div class="driverSeat"><div><div style="font-size:12px">CHAUFFEUR</div><div id="driverNameDisplay" style="font-size:19px;font-weight:900">---</div></div></div><button class="seatBtn seatFree" id="seat-SP" data-seat="SP"><span class="code">SP</span><span class="amount">Libre</span></button></div><div class="backRow"><button class="seatBtn seatFree" id="seat-SG"><span class="code">SG</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SM"><span class="code">SM</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SD"><span class="code">SD</span><span class="amount">Libre</span></button></div></div>
 <div id="farePanel" class="fareGrid"><button class="fare" data-amount="200">200</button><button class="fare" data-amount="500">500</button><button class="fare" data-amount="1000">1000</button><button class="fare" data-amount="1500">1500</button><button class="fare" data-amount="2000">2000</button><button class="fare" data-amount="2500">2500</button><button class="fare" data-amount="3000">3000</button><button class="fare" data-amount="3500">3500</button><button class="fare" data-amount="4000">4000</button><button class="fare btn-yellow" data-amount="5000">5000</button></div>
@@ -42,17 +42,17 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 <div class="modal-bg" id="pinModal"><div class="modal"><h2>Info</h2><p class="muted">PIN chauffeur</p><input id="pinInput" type="password" inputmode="numeric" maxlength="4"><button id="pinSubmit">Valider</button><button class="btn-dark" id="pinCancel">Annuler</button></div></div>
 <div class="modal-bg" id="infoModal"><div class="modal"><h2>Info du jour</h2><div class="grid2"><div class="box"><small>Chauffeur</small><strong id="infoDriver">---</strong></div><div class="box"><small>Passagers</small><strong id="infoPassengers">0</strong></div><div class="box"><small>Montant</small><strong id="infoTotal">0</strong></div><div class="box"><small>Début</small><strong id="infoStart">--:--</strong></div></div><br><label>Historique détaillé</label><div class="list" id="privateHistory"></div><br><button class="btn-dark" id="infoClose">Fermer</button></div></div>
 <script>
-var active=false,selectedSeat=null,startTime=null,driverName="",driverPin="1234",currentIncident=null;
+var active=false,selectedSeat=null,startTime=null,driverName="",driverPin="1234",plateNumber="",currentIncident=null;
 var seats={SP:{amount:0,occupied:false},SG:{amount:0,occupied:false},SM:{amount:0,occupied:false},SD:{amount:0,occupied:false}};
 var seatList=["SP","SG","SM","SD"],publicActions=[],privateActions=[],incidentActions=[];
 var incidentTypes=["Contrôle police","Panne véhicule","Embouteillage important","Agression / vol","Accident","Client problématique","Manque carburant","Pause chauffeur","Route bloquée","Autre"];
 function el(id){return document.getElementById(id)} function money(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g," ")+" FCFA"} function nowText(){var d=new Date();return d.getHours().toString().padStart(2,"0")+":"+d.getMinutes().toString().padStart(2,"0")}
 function countOnboard(){return seatList.filter(s=>seats[s].occupied).length} function totalAmount(){var t=0;seatList.forEach(s=>{if(seats[s].occupied)t+=seats[s].amount});privateActions.forEach(a=>{if(a.status==="descendu")t+=a.amount});return t} function passengersCount(){return privateActions.filter(a=>a.status==="descendu").length+countOnboard()}
-function saveLive(status){var live={driver:driverName||"---",route:el("route").value,vehicle:"Taxi 001",status:status,onboard:countOnboard(),free:4-countOnboard(),start:startTime||"--:--",last:el("status").textContent,incident:currentIncident,updated:nowText()};localStorage.setItem("taclar_live",JSON.stringify(live))}
+function saveLive(status){var live={driver:driverName||"---",route:el("route").value,vehicle:plateNumber||"Taxi 001",status:status,onboard:countOnboard(),free:4-countOnboard(),start:startTime||"--:--",last:el("status").textContent,incident:currentIncident,updated:nowText()};localStorage.setItem("taclar_live",JSON.stringify(live))}
 function addPublicAction(t){publicActions.push(t);if(publicActions.length>4)publicActions=publicActions.slice(publicActions.length-4)}
 function render(){el("onboard").textContent=countOnboard();el("freeSeats").textContent=4-countOnboard();seatList.forEach(c=>{var btn=el("seat-"+c),amt=btn.querySelector(".amount");if(seats[c].occupied){btn.className="seatBtn seatBusy";amt.textContent="Occupé"}else{btn.className="seatBtn seatFree";amt.textContent="Libre"}});if(currentIncident){el("incidentAlert").style.display="block";el("incidentAlertText").textContent=currentIncident.time+" · "+currentIncident.reason}else{el("incidentAlert").style.display="none"};var ph=el("publicHistory");if(publicActions.length===0)ph.textContent="Aucune action.";else{ph.innerHTML="";publicActions.slice().reverse().forEach(t=>{var r=document.createElement("div");r.className="row";r.innerHTML="<span>"+t+"</span><b>OK</b>";ph.appendChild(r)})}; if(active)saveLive(currentIncident?'incident':'service')}
 function hidePanels(){el("farePanel").style.display="none";el("seatPanel").style.display="none"}
-function startSession(){var n=el("driverNameInput").value.trim(),p=el("driverPinInput").value.trim();if(!n)return alert("Entre le nom du chauffeur."); if(!p)return alert("Entre le PIN chauffeur.");driverName=n;driverPin=p;active=true;startTime=nowText();publicActions=[];privateActions=[];incidentActions=[];currentIncident=null;seatList.forEach(s=>{seats[s].amount=0;seats[s].occupied=false});el("driverNameDisplay").textContent=driverName;el("driverNameInput").disabled=true;el("driverPinInput").disabled=true;el("route").disabled=true;el("vehicleType").disabled=true;el("startBtn").disabled=true;el("status").textContent="Session active - "+driverName;render()}
+function startSession(){var n=el("driverNameInput").value.trim(),p=el("driverPinInput").value.trim();var plate=el("plateInput").value.trim();if(!plate)return alert("Entre la plaque du véhicule.");if(!n)return alert("Entre le nom du chauffeur."); if(!p)return alert("Entre le PIN chauffeur.");driverName=n;driverPin=p;plateNumber=plate;active=true;startTime=nowText();publicActions=[];privateActions=[];incidentActions=[];currentIncident=null;seatList.forEach(s=>{seats[s].amount=0;seats[s].occupied=false});el("driverNameDisplay").textContent=driverName;el("plateInput").disabled=true;el("driverNameInput").disabled=true;el("driverPinInput").disabled=true;el("route").disabled=true;el("vehicleType").disabled=true;el("startBtn").disabled=true;el("status").textContent="Session active - "+driverName;render()}
 function chooseSeat(c){if(!active)return alert("Démarre d'abord la session.");selectedSeat=c;hidePanels();if(seats[c].occupied){el("seatPanelTitle").textContent=c+" occupé";el("seatPanel").style.display="block"}else{el("farePanel").style.display="grid"}}
 function addPassenger(a){seats[selectedSeat].amount=a;seats[selectedSeat].occupied=true;privateActions.push({seat:selectedSeat,amount:a,status:"à bord",time:nowText()});addPublicAction(selectedSeat+" occupé");el("status").textContent=selectedSeat+" ajouté";hidePanels();render()}
 function adjust(d){if(d<0&&!confirm("Confirmer la baisse de "+money(Math.abs(d))+" ?"))return;var next=seats[selectedSeat].amount+d;if(next<200)return alert("Minimum 200 FCFA.");seats[selectedSeat].amount=next;for(var i=privateActions.length-1;i>=0;i--){if(privateActions[i].seat===selectedSeat&&privateActions[i].status==="à bord"){privateActions[i].amount=next;break}}el("status").textContent=selectedSeat+" ajusté";hidePanels();render()}
@@ -63,8 +63,8 @@ function resetForNewSession(){
 active=false;selectedSeat=null;startTime=null;driverName="";driverPin="1234";currentIncident=null;
 seatList.forEach(s=>{seats[s].amount=0;seats[s].occupied=false});
 publicActions=[];privateActions=[];incidentActions=[];
-el("driverNameInput").disabled=false;el("driverPinInput").disabled=false;el("route").disabled=false;el("vehicleType").disabled=false;el("startBtn").disabled=false;
-el("driverNameInput").value="";el("driverPinInput").value="";el("driverNameDisplay").textContent="---";
+el("plateInput").disabled=false;el("driverNameInput").disabled=false;el("driverPinInput").disabled=false;el("route").disabled=false;el("vehicleType").disabled=false;el("startBtn").disabled=false;
+el("plateInput").value="";el("driverNameInput").value="";el("driverPinInput").value="";el("driverNameDisplay").textContent="---";
 el("status").textContent="Choisir un axe puis démarrer";
 hidePanels();render();
 }
@@ -74,11 +74,11 @@ if(countOnboard()>0)return alert("Impossible de clôturer : il reste des passage
 if(privateActions.filter(a=>a.status==="descendu").length===0)return alert("Aucun passager descendu à clôturer.");
 if(!confirm("Voulez-vous vraiment clôturer cette session ?"))return;
 var t=totalAmount();
-var session={date:new Date().toLocaleDateString(),time:nowText(),driver:driverName,route:el("route").value,passengers:passengersCount(),total:t,commission:Math.round(t*0.15),net:t-Math.round(t*0.15),incidents:incidentActions};
+var session={date:new Date().toLocaleDateString(),time:nowText(),driver:driverName,plate:plateNumber,route:el("route").value,passengers:passengersCount(),total:t,commission:Math.round(t*0.15),net:t-Math.round(t*0.15),incidents:incidentActions};
 var sessions=JSON.parse(localStorage.getItem("taclar_sessions")||"[]");
 sessions.push(session);
 localStorage.setItem("taclar_sessions",JSON.stringify(sessions));
-localStorage.setItem("taclar_live",JSON.stringify({driver:session.driver,route:session.route,vehicle:"Taxi 001",status:"closed",onboard:0,free:4,start:session.time,last:"Session clôturée",incident:null,updated:nowText()}));
+localStorage.setItem("taclar_live",JSON.stringify({driver:session.driver,route:session.route,vehicle:plateNumber||"Taxi 001",status:"closed",onboard:0,free:4,start:session.time,last:"Session clôturée",incident:null,updated:nowText()}));
 alert("Session clôturée et envoyée vers Admin local.");
 resetForNewSession();
 }
