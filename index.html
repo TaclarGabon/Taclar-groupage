@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>TACLAR Groupage v0.8.4</title>
+<title>TACLAR Groupage v0.8.5</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
@@ -30,7 +30,7 @@ button:active{transform:scale(.97)}button:disabled{opacity:.45}.btn-yellow{backg
 .fareGrid{display:none;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.fareGrid button{margin-bottom:0;min-height:54px}
 .seatPanel{display:none;margin-top:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:12px}
 .seatPanelTitle{font-weight:bold;margin-bottom:10px}.adjustGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}.adjustGrid button,.fullGrid button{margin-bottom:0}
-.list{display:flex;flex-direction:column;gap:8px;max-height:190px;overflow-y:auto}.row{display:flex;justify-content:space-between;background:rgba(255,255,255,.06);padding:12px;border-radius:14px;font-size:14px;border:1px solid rgba(255,255,255,.06)}.row b{color:#5eead4}.muted{color:#94a3b8}
+.list{display:flex;flex-direction:column;gap:8px;max-height:190px;overflow-y:auto}.row{display:flex;justify-content:space-between;background:rgba(255,255,255,.06);padding:12px;border-radius:14px;font-size:14px;border:1px solid rgba(255,255,255,.06)}.row b{color:#5eead4}.muted{color:#94a3b8}.incidentAlert{display:none;background:rgba(239,68,68,.16);border:1px solid rgba(239,68,68,.45);color:#fecaca;border-radius:18px;padding:14px;margin-bottom:14px;font-weight:bold}.incidentAlert small{display:block;color:#fca5a5;margin-top:4px;font-weight:normal}
 .footer{display:grid;grid-template-columns:1fr 1fr;gap:12px}.footer button{margin-bottom:0}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10;padding:18px;align-items:center;justify-content:center}
 .modal{width:100%;max-width:390px;background:#102629;border-radius:24px;padding:20px;border:1px solid rgba(255,255,255,.15);max-height:88vh;overflow-y:auto}
@@ -39,7 +39,7 @@ button:active{transform:scale(.97)}button:disabled{opacity:.45}.btn-yellow{backg
 </head>
 <body>
 <div class="app">
-<div class="badge">V0.8.4</div><h1>TACLAR</h1><div class="subtitle">Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div>
+<div class="badge">V0.8.5</div><h1>TACLAR</h1><div class="subtitle">Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div>
 <div class="card"><div class="grid2"><div><label>Axe</label><select id="route"><option>Okala → Aéroport</option><option>Akanda → Centre-ville</option><option>Nzeng-Ayong → Aéroport</option><option>Charbonnages → Louis</option><option>Owendo → Centre-ville</option></select></div><div><label>Type véhicule</label><select id="vehicleType"><option value="4">Corolla - 4 places</option></select></div></div><br>
 <label>Nom chauffeur</label>
 <input id="driverNameInput" type="text" placeholder="Ex : Paul" style="letter-spacing:0;text-align:left;font-size:17px;">
@@ -49,7 +49,7 @@ button:active{transform:scale(.97)}button:disabled{opacity:.45}.btn-yellow{backg
 <div class="card"><label>Plan des sièges</label><div class="seatMap"><div class="frontRow"><div class="driverSeat"><div><div style="font-size:12px;color:#111827;">CHAUFFEUR</div><div id="driverNameDisplay" style="font-size:19px;color:#111827;font-weight:900;">---</div></div></div><button class="seatBtn seatFree" id="seat-SP" data-seat="SP"><span class="code">SP</span><span class="amount">Libre</span></button></div><div class="backRow"><button class="seatBtn seatFree" id="seat-SG" data-seat="SG"><span class="code">SG</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SM" data-seat="SM"><span class="code">SM</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SD" data-seat="SD"><span class="code">SD</span><span class="amount">Libre</span></button></div></div>
 <div id="farePanel" class="fareGrid"><button class="fare" data-amount="200">200</button><button class="fare" data-amount="500">500</button><button class="fare" data-amount="1000">1000</button><button class="fare" data-amount="1500">1500</button><button class="fare" data-amount="2000">2000</button><button class="fare" data-amount="2500">2500</button><button class="fare" data-amount="3000">3000</button><button class="fare" data-amount="3500">3500</button><button class="fare" data-amount="4000">4000</button><button class="fare btn-yellow" data-amount="5000">5000</button></div>
 <div id="seatPanel" class="seatPanel"><div class="seatPanelTitle" id="seatPanelTitle">Siège</div><div class="adjustGrid"><button id="plus500">+500</button><button id="minus500" class="btn-yellow">-500</button></div><div class="adjustGrid"><button id="plus1000">+1000</button><button id="minus1000" class="btn-yellow">-1000</button></div><div class="fullGrid"><button id="dropSeat" class="btn-dark">Descendu / libérer siège</button></div></div></div>
-<div class="card"><label>Dernières actions</label><div class="list" id="publicHistory">Aucune action.</div></div>
+<div class="incidentAlert" id="incidentAlert">Incident en cours<small id="incidentAlertText"></small></div><div class="card"><label>Dernières actions</label><div class="list" id="publicHistory">Aucune action.</div></div>
 <div class="footer"><button class="btn-dark" id="infoBtn">Info</button><button class="btn-red" id="incidentBtn">Incident</button></div><br><button class="btn-dark" id="close">Clôturer session</button>
 </div>
 
@@ -73,9 +73,9 @@ button:active{transform:scale(.97)}button:disabled{opacity:.45}.btn-yellow{backg
 <div class="modal-bg" id="infoModal"><div class="modal"><h2>Info du jour</h2><div class="infoGrid"><div class="infoBox"><small>Chauffeur</small><strong id="infoDriver">---</strong></div><div class="infoBox"><small>Passagers</small><strong id="infoPassengers">0</strong></div><div class="infoBox"><small>Montant</small><strong id="infoTotal">0 FCFA</strong></div><div class="infoBox"><small>Début</small><strong id="infoStart">--:--</strong></div><div class="infoBox"><small>Actuel</small><strong id="infoNow">--:--</strong></div></div><label>Historique détaillé</label><div class="list" id="privateHistory"></div><br><button class="btn-dark" id="infoClose">Fermer</button></div></div>
 <div class="modal-bg" id="closeModal"><div class="modal"><h2>Session clôturée</h2><p><b>Chauffeur :</b> <span id="mDriverName"></span></p><p><b>Axe :</b> <span id="mRoute"></span></p><p><b>Passagers :</b> <span id="mTransported"></span></p><p><b>Montant :</b> <span id="mTotal"></span></p><p><b>Commission TACLAR 15% :</b> <span id="mCommission"></span></p><p><b>Revenu chauffeur :</b> <span id="mDriver"></span></p><button id="newSession">Nouvelle session</button></div></div>
 <script>
-(function(){var PIN="1234",active=false,selectedSeat=null,startTime=null,driverName="",seats={SP:{amount:0,occupied:false},SG:{amount:0,occupied:false},SM:{amount:0,occupied:false},SD:{amount:0,occupied:false}},publicActions=[],privateActions=[],incidentActions=[],seatList=["SP","SG","SM","SD"];
+(function(){var PIN="1234",active=false,selectedSeat=null,startTime=null,driverName="",seats={SP:{amount:0,occupied:false},SG:{amount:0,occupied:false},SM:{amount:0,occupied:false},SD:{amount:0,occupied:false}},publicActions=[],privateActions=[],incidentActions=[],currentIncident=null,seatList=["SP","SG","SM","SD"];
 function el(id){return document.getElementById(id)}function money(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g," ")+" FCFA"}function nowText(){var d=new Date();return d.getHours().toString().padStart(2,"0")+":"+d.getMinutes().toString().padStart(2,"0")}function countOnboard(){var c=0;seatList.forEach(function(s){if(seats[s].occupied)c++});return c}function totalAmount(){var t=0;seatList.forEach(function(s){if(seats[s].occupied)t+=seats[s].amount});privateActions.forEach(function(a){if(a.status==="descendu")t+=a.amount});return t}function passengersCount(){return privateActions.filter(function(a){return a.status==="descendu"}).length+countOnboard()}function addPublicAction(text){publicActions.push(text);if(publicActions.length>4)publicActions=publicActions.slice(publicActions.length-4)}
-function render(){var on=countOnboard();el("onboard").textContent=on;el("freeSeats").textContent=4-on;seatList.forEach(function(code){var btn=el("seat-"+code),amt=btn.querySelector(".amount");if(seats[code].occupied){btn.className="seatBtn seatBusy";amt.textContent="Occupé"}else{btn.className="seatBtn seatFree";amt.textContent="Libre"}});if(publicActions.length===0){el("publicHistory").textContent="Aucune action."}else{el("publicHistory").innerHTML="";publicActions.slice().reverse().forEach(function(text){var row=document.createElement("div");row.className="row";row.innerHTML="<span>"+text+"</span><b>OK</b>";el("publicHistory").appendChild(row)})}}
+function render(){var on=countOnboard();el("onboard").textContent=on;el("freeSeats").textContent=4-on;seatList.forEach(function(code){var btn=el("seat-"+code),amt=btn.querySelector(".amount");if(seats[code].occupied){btn.className="seatBtn seatBusy";amt.textContent="Occupé"}else{btn.className="seatBtn seatFree";amt.textContent="Libre"}});if(currentIncident){el("incidentAlert").style.display="block";el("incidentAlertText").textContent=currentIncident.time+" · "+currentIncident.reason}else{el("incidentAlert").style.display="none";el("incidentAlertText").textContent=""}if(publicActions.length===0){el("publicHistory").textContent="Aucune action."}else{el("publicHistory").innerHTML="";publicActions.slice().reverse().forEach(function(text){var row=document.createElement("div");row.className="row";row.innerHTML="<span>"+text+"</span><b>OK</b>";el("publicHistory").appendChild(row)})}}
 function hidePanels(){el("farePanel").style.display="none";el("seatPanel").style.display="none"}function startSession(){
 var name=el("driverNameInput").value.trim();
 if(!name){alert("Entre le nom du chauffeur.");return}
@@ -122,7 +122,7 @@ var ok=confirm("Confirmer incident : "+reason+" ?");
 if(!ok)return;
 var entry={reason:reason,time:nowText(),driver:driverName||"---"};
 incidentActions.push(entry);
-addPublicAction("Incident : "+reason);
+currentIncident=entry;
 el("status").textContent="Incident signalé : "+reason;
 el("incidentModal").style.display="none";
 render();
