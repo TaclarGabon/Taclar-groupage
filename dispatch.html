@@ -1,150 +1,263 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V10.6</title><style>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TACLAR Dispatch V10.7</title>
+<style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
-.app{max-width:430px;margin:auto;padding:16px;min-height:100vh}
-.wide{max-width:980px}
+.app{max-width:980px;margin:auto;padding:16px;min-height:100vh}
 .badge{float:right;padding:8px 12px;border-radius:20px;background:rgba(20,184,166,.18);border:1px solid rgba(20,184,166,.5);color:#5eead4;font-weight:bold;font-size:13px}
-h1{margin:0;font-size:32px}.subtitle,.muted{color:#9ca3af}.status{color:#5eead4;font-size:13px;margin-bottom:14px;min-height:18px}
+h1{margin:0;font-size:32px}.subtitle,.muted{color:#9ca3af}
 .card{background:#102629;border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:16px;margin-bottom:14px}
-label{color:#9ca3af;font-size:13px;display:block;margin-bottom:6px}
-select,input{width:100%;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:#061416;color:white;font-size:17px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.summary{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px}
 .box{background:rgba(255,255,255,.06);border-radius:18px;padding:16px 10px;text-align:center;border:1px solid rgba(255,255,255,.08)}
-.box small{display:block;color:#9ca3af;margin-bottom:6px;font-size:12px}.box strong{font-size:24px}.green{color:#5eead4}.yellow{color:#facc15}
-button{width:100%;min-height:58px;border:none;border-radius:18px;font-size:18px;font-weight:bold;background:#14b8a6;color:#05201f;cursor:pointer;margin-bottom:10px}
-.btn-yellow{background:#facc15;color:#111827}.btn-dark{background:rgba(255,255,255,.08);color:white;border:1px solid rgba(255,255,255,.12)}.btn-red{background:rgba(239,68,68,.18);color:#fecaca;border:1px solid rgba(239,68,68,.4)}
-.seatMap{display:grid;gap:12px;margin-top:8px}.frontRow{display:grid;grid-template-columns:1fr 1fr;gap:12px}.backRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.driverSeat{background:#facc15;border-radius:18px;min-height:86px;display:flex;align-items:center;justify-content:center;text-align:center;color:#111827;font-weight:bold}
-.seatBtn{min-height:86px;margin-bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15}.seatBtn .code{font-size:24px}.seatBtn .amount{font-size:13px;margin-top:6px}
-.seatFree{background:rgba(255,255,255,.08);color:white;border:1px solid rgba(255,255,255,.14)}.seatBusy{background:#14b8a6;color:#05201f;border:1px solid rgba(255,255,255,.18)}
-.fareGrid{display:none;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.fareGrid button{margin-bottom:0;min-height:54px}
-.seatPanel{display:none;margin-top:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:12px}.adjustGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
-.list{display:flex;flex-direction:column;gap:8px;max-height:210px;overflow-y:auto}.row{display:flex;justify-content:space-between;background:rgba(255,255,255,.06);padding:12px;border-radius:14px;font-size:14px;border:1px solid rgba(255,255,255,.06)}.row b{color:#5eead4}
-.footer{display:grid;grid-template-columns:1fr 1fr;gap:12px}.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10;padding:18px;align-items:center;justify-content:center}.modal{width:100%;max-width:390px;background:#102629;border-radius:24px;padding:20px;border:1px solid rgba(255,255,255,.15);max-height:88vh;overflow:auto}
-.incidentAlert{display:none;background:rgba(239,68,68,.16);border:1px solid rgba(239,68,68,.45);color:#fecaca;border-radius:18px;padding:14px;margin-bottom:14px;font-weight:bold}.incidentAlert small{display:block;color:#fca5a5;margin-top:4px;font-weight:normal}
-table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{border-bottom:1px solid rgba(255,255,255,.12);padding:10px;text-align:left}th{color:#94a3b8}
-.statuspill{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:bold;font-size:12px}.pillgreen{background:rgba(34,197,94,.18);color:#86efac}.pillorange{background:rgba(250,204,21,.18);color:#fde68a}.pillgray{background:rgba(148,163,184,.18);color:#cbd5e1}
-@media(max-width:700px){.wide{max-width:430px}.grid2{grid-template-columns:1fr 1fr}table{font-size:12px}}
-
+.box small{display:block;color:#9ca3af;margin-bottom:6px;font-size:12px}.box strong{font-size:24px}
+button{width:100%;min-height:50px;border:none;border-radius:16px;font-size:16px;font-weight:bold;background:#14b8a6;color:#05201f;cursor:pointer;margin-bottom:10px}
+.btn-dark{background:rgba(255,255,255,.08);color:white;border:1px solid rgba(255,255,255,.12)}
+.btn-red{background:rgba(239,68,68,.18);color:#fecaca;border:1px solid rgba(239,68,68,.4)}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}
+th,td{border-bottom:1px solid rgba(255,255,255,.12);padding:10px;text-align:left}
+th{color:#94a3b8}
+a{color:#5eead4;font-weight:bold;text-decoration:none}
+.statuspill{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:bold;font-size:12px}
+.pillgreen{background:rgba(34,197,94,.18);color:#86efac}.pillorange{background:rgba(250,204,21,.18);color:#fde68a}.pillgray{background:rgba(148,163,184,.18);color:#cbd5e1}
 .detailBox{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:16px;padding:12px;margin:8px 0}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10;padding:18px;align-items:center;justify-content:center}
 .modal{width:100%;max-width:430px;background:#102629;border-radius:24px;padding:20px;border:1px solid rgba(255,255,255,.15);max-height:88vh;overflow:auto}
-</style></head><body><div class="app wide"><div class="badge">DISPATCH V10.6</div><h1>TACLAR Dispatch</h1><div class="subtitle">Suivi opérationnel — Groupage</div><div class="card"><button onclick="render()">Actualiser</button><button class="btn-red" onclick="clearDispatch()">Effacer statut dispatch</button><p class="muted">Aucun montant n’est affiché ici.</p></div><div class="summary"><div class="box"><small>Statut</small><strong id="status">---</strong></div><div class="box"><small>À bord</small><strong id="onboard">0/4</strong></div><div class="box"><small>Places libres</small><strong id="free">4</strong></div><div class="box"><small>Incident</small><strong id="incident">Non</strong></div></div><div class="card"><h2>Chauffeur actif</h2><table><thead><tr><th>Plaque</th><th>Chauffeur</th><th>Axe</th><th>Statut</th><th>À bord</th><th>Places</th><th>Début</th><th>Dernière info</th><th>Action</th></tr></thead><tbody id="rows"></tbody></table></div></div><div class="modal-bg" id="detailModal"><div class="modal">
+@media(max-width:700px){.app{max-width:430px;padding:12px}.summary{grid-template-columns:1fr 1fr}table{font-size:12px}th,td{padding:8px}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="badge">DISPATCH V10.7</div>
+<h1>TACLAR Dispatch</h1>
+<div class="subtitle">Suivi opérationnel — Groupage</div>
+
+<div class="card">
+<button onclick="render()">Actualiser</button>
+<button class="btn-red" onclick="clearDispatch()">Effacer statut dispatch</button>
+<p class="muted">Aucun montant n’est affiché ici.</p>
+</div>
+
+<div class="summary">
+<div class="box"><small>Statut</small><strong id="status">---</strong></div>
+<div class="box"><small>À bord</small><strong id="onboard">0/4</strong></div>
+<div class="box"><small>Places libres</small><strong id="free">4</strong></div>
+<div class="box"><small>Incident</small><strong id="incident">Non</strong></div>
+</div>
+
+<div class="card">
+<h2>Chauffeurs groupage</h2>
+<table>
+<thead>
+<tr>
+<th>Plaque</th><th>Chauffeur</th><th>Axe</th><th>Statut</th><th>À bord</th><th>Places</th><th>Début</th><th>Dernière info</th><th>Action</th>
+</tr>
+</thead>
+<tbody id="rows"></tbody>
+</table>
+</div>
+</div>
+
+<div class="modal-bg" id="detailModal">
+<div class="modal">
 <h2>Détail opérationnel</h2>
 <div id="detailContent"></div>
 <button class="btn-dark" onclick="closeDetail()">Fermer</button>
-</div></div>
+</div>
+</div>
+
 <script>
-function pill(s){
-  if(s==='service')return '<span class="statuspill pillgreen">En service</span>';
-  if(s==='incident')return '<span class="statuspill pillorange">Incident</span>';
+var currentRows = [];
+
+function pill(status){
+  if(status === "service") return '<span class="statuspill pillgreen">En service</span>';
+  if(status === "incident") return '<span class="statuspill pillorange">Incident</span>';
   return '<span class="statuspill pillgray">Terminé</span>';
 }
-function getHidden(){return JSON.parse(localStorage.getItem('taclar_dispatch_hidden')||'[]')}
-function setHidden(h){localStorage.setItem('taclar_dispatch_hidden',JSON.stringify(h))}
-function rowId(x){return (x.plate||x.vehicle||'---')+'|'+(x.driver||'---')+'|'+(x.time||x.updated||'')}
+
+function getHidden(){
+  try { return JSON.parse(localStorage.getItem("taclar_dispatch_hidden") || "[]"); }
+  catch(e){ return []; }
+}
+
+function setHidden(hidden){
+  localStorage.setItem("taclar_dispatch_hidden", JSON.stringify(hidden));
+}
+
+function rowId(row){
+  return [row.source || "", row.plate || "---", row.driver || "---", row.route || "---", row.start || "", row.updated || ""].join("|");
+}
+
 function getRows(){
-  var rows=[];
-  var live=JSON.parse(localStorage.getItem('taclar_live')||'null');
-  if(live){
-    rows.push({
-      source:'live',
-      plate:live.vehicle||'---',
-      driver:live.driver||'---',
-      route:live.route||'---',
-      status:live.status||'closed',
-      onboard:live.onboard||0,
-      free:live.free??4,
-      start:live.start||'--:--',
-      last:live.last||'',
-      incident:live.incident||null,
-      updated:live.updated||''
+  var rows = [];
+
+  try {
+    var live = JSON.parse(localStorage.getItem("taclar_live") || "null");
+    if(live){
+      rows.push({
+        source: "live",
+        plate: live.vehicle || "---",
+        driver: live.driver || "---",
+        route: live.route || "---",
+        status: live.status || "closed",
+        onboard: Number(live.onboard || 0),
+        free: live.free == null ? 4 : Number(live.free),
+        start: live.start || "--:--",
+        last: live.last || "",
+        incident: live.incident || null,
+        updated: live.updated || ""
+      });
+    }
+  } catch(e){}
+
+  try {
+    var sessions = JSON.parse(localStorage.getItem("taclar_sessions") || "[]");
+    sessions.forEach(function(s, index){
+      rows.push({
+        source: "session-" + index,
+        plate: s.plate || "---",
+        driver: s.driver || "---",
+        route: s.route || "---",
+        status: "closed",
+        onboard: 0,
+        free: 4,
+        start: s.time || "--:--",
+        last: "Session clôturée",
+        incident: (s.incidents && s.incidents.length) ? s.incidents[s.incidents.length - 1] : null,
+        updated: s.time || ""
+      });
     });
-  }
-  var sessions=JSON.parse(localStorage.getItem('taclar_sessions')||'[]');
-  sessions.forEach(function(s){
-    rows.push({
-      source:'session',
-      plate:s.plate||'---',
-      driver:s.driver||'---',
-      route:s.route||'---',
-      status:'closed',
-      onboard:0,
-      free:4,
-      start:s.time||'--:--',
-      last:'Session clôturée',
-      incident:(s.incidents&&s.incidents.length)?s.incidents[s.incidents.length-1]:null,
-      updated:s.time||''
-    });
-  });
+  } catch(e){}
+
   return rows;
 }
+
 function render(){
-  var rowsEl=document.getElementById('rows');
-  var all=getRows();
-  var hidden=getHidden();
-  var visible=all.filter(function(x){return !hidden.includes(rowId(x))});
-  rowsEl.innerHTML='';
-  var service=0, incident=0, closed=0, onboard=0;
-  if(visible.length===0){
-    rowsEl.innerHTML='<tr><td colspan="9">Aucune session active.</td></tr>';
+  var rowsEl = document.getElementById("rows");
+  var hidden = getHidden();
+  currentRows = getRows().filter(function(row){
+    return hidden.indexOf(rowId(row)) === -1;
+  });
+
+  rowsEl.innerHTML = "";
+
+  var service = 0;
+  var incident = 0;
+  var onboard = 0;
+
+  if(currentRows.length === 0){
+    rowsEl.innerHTML = '<tr><td colspan="9">Aucune session active.</td></tr>';
+    document.getElementById("status").textContent = "---";
+    document.getElementById("onboard").textContent = "0/4";
+    document.getElementById("free").textContent = "4";
+    document.getElementById("incident").textContent = "Non";
+    return;
   }
-  visible.slice().reverse().forEach(function(x){
-    if(x.status==='service')service++;
-    if(x.status==='incident')incident++;
-    if(x.status==='closed')closed++;
-    onboard+=Number(x.onboard||0);
-    var tr=document.createElement('tr');
-    var incidentText=x.incident?(' - '+x.incident.reason):'';
-    tr.innerHTML=
-      '<td><a href="#" onclick="showDetail(\\''+encodeURIComponent(rowId(x))+'\\')">'+x.plate+'</a></td>'+
-      '<td>'+x.driver+'</td>'+
-      '<td>'+x.route+'</td>'+
-      '<td>'+pill(x.status)+'</td>'+
-      '<td>'+x.onboard+'/4</td>'+
-      '<td>'+x.free+'</td>'+
-      '<td>'+x.start+'</td>'+
-      '<td>'+x.last+incidentText+'</td>'+
-      '<td><button class="btn-dark" style="min-height:36px;font-size:12px" onclick="hideRow(\\''+encodeURIComponent(rowId(x))+'\\')">Masquer</button></td>';
+
+  currentRows.slice().reverse().forEach(function(row){
+    var idx = currentRows.indexOf(row);
+
+    if(row.status === "service") service++;
+    if(row.status === "incident" || row.incident) incident++;
+    onboard += Number(row.onboard || 0);
+
+    var tr = document.createElement("tr");
+
+    var plateCell = document.createElement("td");
+    var link = document.createElement("a");
+    link.href = "#";
+    link.textContent = row.plate;
+    link.addEventListener("click", function(e){
+      e.preventDefault();
+      showDetail(idx);
+    });
+    plateCell.appendChild(link);
+
+    var driverCell = document.createElement("td"); driverCell.textContent = row.driver;
+    var routeCell = document.createElement("td"); routeCell.textContent = row.route;
+    var statusCell = document.createElement("td"); statusCell.innerHTML = pill(row.status);
+    var onboardCell = document.createElement("td"); onboardCell.textContent = row.onboard + "/4";
+    var freeCell = document.createElement("td"); freeCell.textContent = row.free;
+    var startCell = document.createElement("td"); startCell.textContent = row.start;
+    var infoCell = document.createElement("td");
+    infoCell.textContent = row.last + (row.incident ? " - " + row.incident.reason : "");
+
+    var actionCell = document.createElement("td");
+    var btn = document.createElement("button");
+    btn.className = "btn-dark";
+    btn.style.minHeight = "36px";
+    btn.style.fontSize = "12px";
+    btn.textContent = "Masquer";
+    btn.addEventListener("click", function(){
+      hideRow(idx);
+    });
+    actionCell.appendChild(btn);
+
+    tr.appendChild(plateCell);
+    tr.appendChild(driverCell);
+    tr.appendChild(routeCell);
+    tr.appendChild(statusCell);
+    tr.appendChild(onboardCell);
+    tr.appendChild(freeCell);
+    tr.appendChild(startCell);
+    tr.appendChild(infoCell);
+    tr.appendChild(actionCell);
+
     rowsEl.appendChild(tr);
   });
-  document.getElementById('status').textContent=service>0?'En service':(incident>0?'Incident':'Terminé');
-  document.getElementById('onboard').textContent=onboard+'/4';
-  document.getElementById('free').textContent=visible.length?visible[0].free:4;
-  document.getElementById('incident').textContent=incident>0?'Oui':'Non';
+
+  document.getElementById("status").textContent = service > 0 ? "En service" : (incident > 0 ? "Incident" : "Terminé");
+  document.getElementById("onboard").textContent = onboard + "/4";
+  document.getElementById("free").textContent = currentRows[0] ? currentRows[0].free : 4;
+  document.getElementById("incident").textContent = incident > 0 ? "Oui" : "Non";
 }
-function hideRow(encodedId){
-  var id=decodeURIComponent(encodedId);
-  var h=getHidden();
-  if(!h.includes(id))h.push(id);
-  setHidden(h);
+
+function hideRow(index){
+  var row = currentRows[index];
+  if(!row) return;
+  var hidden = getHidden();
+  var id = rowId(row);
+  if(hidden.indexOf(id) === -1) hidden.push(id);
+  setHidden(hidden);
   render();
 }
-function showDetail(encodedId){
-  var id=decodeURIComponent(encodedId);
-  var x=getRows().find(function(r){return rowId(r)===id});
-  if(!x)return;
-  var html='';
-  html+='<div class="detailBox"><b>Plaque :</b> '+x.plate+'</div>';
-  html+='<div class="detailBox"><b>Chauffeur :</b> '+x.driver+'</div>';
-  html+='<div class="detailBox"><b>Axe :</b> '+x.route+'</div>';
-  html+='<div class="detailBox"><b>Statut :</b> '+x.status+'</div>';
-  html+='<div class="detailBox"><b>À bord :</b> '+x.onboard+'/4</div>';
-  html+='<div class="detailBox"><b>Places libres :</b> '+x.free+'</div>';
-  html+='<div class="detailBox"><b>Début :</b> '+x.start+'</div>';
-  html+='<div class="detailBox"><b>Dernière info :</b> '+x.last+'</div>';
-  html+='<div class="detailBox"><b>Incident :</b> '+(x.incident?x.incident.reason:'Aucun')+'</div>';
-  document.getElementById('detailContent').innerHTML=html;
-  document.getElementById('detailModal').style.display='flex';
+
+function showDetail(index){
+  var row = currentRows[index];
+  if(!row) return;
+
+  var html = "";
+  html += '<div class="detailBox"><b>Plaque :</b> ' + row.plate + '</div>';
+  html += '<div class="detailBox"><b>Chauffeur :</b> ' + row.driver + '</div>';
+  html += '<div class="detailBox"><b>Axe :</b> ' + row.route + '</div>';
+  html += '<div class="detailBox"><b>Statut :</b> ' + row.status + '</div>';
+  html += '<div class="detailBox"><b>À bord :</b> ' + row.onboard + '/4</div>';
+  html += '<div class="detailBox"><b>Places libres :</b> ' + row.free + '</div>';
+  html += '<div class="detailBox"><b>Début :</b> ' + row.start + '</div>';
+  html += '<div class="detailBox"><b>Dernière info :</b> ' + row.last + '</div>';
+  html += '<div class="detailBox"><b>Incident :</b> ' + (row.incident ? row.incident.reason : "Aucun") + '</div>';
+
+  document.getElementById("detailContent").innerHTML = html;
+  document.getElementById("detailModal").style.display = "flex";
 }
-function closeDetail(){document.getElementById('detailModal').style.display='none'}
+
+function closeDetail(){
+  document.getElementById("detailModal").style.display = "none";
+}
+
 function clearDispatch(){
-  if(confirm('Effacer le dernier statut dispatch et les lignes masquées ?')){
-    localStorage.removeItem('taclar_live');
-    localStorage.removeItem('taclar_dispatch_hidden');
+  if(confirm("Effacer le dernier statut dispatch et les lignes masquées ?")){
+    localStorage.removeItem("taclar_live");
+    localStorage.removeItem("taclar_dispatch_hidden");
     render();
   }
 }
+
 render();
-setInterval(render,3000);
-</script></body></html>
+setInterval(render, 3000);
+</script>
+</body>
+</html>
