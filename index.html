@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V10</title><style>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V10.1</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:430px;margin:auto;padding:16px;min-height:100vh}
@@ -28,7 +28,7 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 @media(max-width:700px){.wide{max-width:430px}.grid2{grid-template-columns:1fr 1fr}table{font-size:12px}}
 </style></head>
 <body><div class="app">
-<div class="badge">V10</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div>
+<div class="badge">V10.1</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div>
 <div class="card"><div class="grid2"><div><label>Axe</label><select id="route"><option>Okala → Aéroport</option><option>Akanda → Centre-ville</option><option>Nzeng-Ayong → Aéroport</option><option>Charbonnages → Louis</option><option>Owendo → Centre-ville</option><option>Sans axe fixe</option></select></div><div><label>Type véhicule</label><select id="vehicleType"><option value="4">Corolla - 4 places</option></select></div></div><br><label>Nom chauffeur</label><input id="driverNameInput" placeholder="Ex : Paul"><br><br><label>PIN chauffeur</label><input id="driverPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="1234"><br><br><button id="startBtn">Démarrer la session</button></div>
 <div class="summary"><div class="box"><small>À bord</small><strong><span id="onboard">0</span>/4</strong></div><div class="box"><small>Places libres</small><strong class="green" id="freeSeats">4</strong></div></div>
 <div class="card"><label>Plan des sièges</label><div class="seatMap"><div class="frontRow"><div class="driverSeat"><div><div style="font-size:12px">CHAUFFEUR</div><div id="driverNameDisplay" style="font-size:19px;font-weight:900">---</div></div></div><button class="seatBtn seatFree" id="seat-SP" data-seat="SP"><span class="code">SP</span><span class="amount">Libre</span></button></div><div class="backRow"><button class="seatBtn seatFree" id="seat-SG"><span class="code">SG</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SM"><span class="code">SM</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SD"><span class="code">SD</span><span class="amount">Libre</span></button></div></div>
@@ -59,6 +59,28 @@ function adjust(d){if(d<0&&!confirm("Confirmer la baisse de "+money(Math.abs(d))
 function dropSeat(){if(!confirm("Confirmer que "+selectedSeat+" est descendu ?"))return;for(var i=privateActions.length-1;i>=0;i--){if(privateActions[i].seat===selectedSeat&&privateActions[i].status==="à bord"){privateActions[i].status="descendu";privateActions[i].dropTime=nowText();privateActions[i].amount=seats[selectedSeat].amount;break}}seats[selectedSeat].amount=0;seats[selectedSeat].occupied=false;addPublicAction(selectedSeat+" descendu");el("status").textContent=selectedSeat+" libéré";hidePanels();render()}
 function reportIncident(r){if(!confirm("Confirmer incident : "+r+" ?"))return;currentIncident={reason:r,time:nowText(),driver:driverName};incidentActions.push(currentIncident);el("status").textContent="Incident signalé : "+r;el("incidentModal").style.display="none";render()}
 function showInfo(){el("infoDriver").textContent=driverName;el("infoPassengers").textContent=passengersCount();el("infoTotal").textContent=money(totalAmount());el("infoStart").textContent=startTime;var list=el("privateHistory");list.innerHTML="";privateActions.slice().reverse().forEach(a=>{var r=document.createElement("div");r.className="row";r.innerHTML="<span>"+a.seat+" · "+a.status+"</span><b>"+money(a.amount)+"</b>";list.appendChild(r)});incidentActions.slice().reverse().forEach(i=>{var r=document.createElement("div");r.className="row";r.innerHTML="<span>Incident · "+i.reason+" · "+i.time+"</span><b>ALERTE</b>";list.appendChild(r)});el("infoModal").style.display="flex"}
-function closeSession(){if(!active||totalAmount()===0)return alert("Aucune donnée à clôturer."); if(!confirm("Voulez-vous vraiment clôturer cette session ?"))return;var session={date:new Date().toLocaleDateString(),time:nowText(),driver:driverName,route:el("route").value,passengers:passengersCount(),total:totalAmount(),commission:Math.round(totalAmount()*0.15),net:totalAmount()-Math.round(totalAmount()*0.15),incidents:incidentActions};var sessions=JSON.parse(localStorage.getItem("taclar_sessions")||"[]");sessions.push(session);localStorage.setItem("taclar_sessions",JSON.stringify(sessions));active=false;el("status").textContent="Session clôturée";saveLive("closed");alert("Session envoyée vers Admin local.");}
+function resetForNewSession(){
+active=false;selectedSeat=null;startTime=null;driverName="";driverPin="1234";currentIncident=null;
+seatList.forEach(s=>{seats[s].amount=0;seats[s].occupied=false});
+publicActions=[];privateActions=[];incidentActions=[];
+el("driverNameInput").disabled=false;el("driverPinInput").disabled=false;el("route").disabled=false;el("vehicleType").disabled=false;el("startBtn").disabled=false;
+el("driverNameInput").value="";el("driverPinInput").value="";el("driverNameDisplay").textContent="---";
+el("status").textContent="Choisir un axe puis démarrer";
+hidePanels();render();
+}
+function closeSession(){
+if(!active)return alert("Aucune session active.");
+if(countOnboard()>0)return alert("Impossible de clôturer : il reste des passagers à bord. Libère d’abord les sièges occupés.");
+if(privateActions.filter(a=>a.status==="descendu").length===0)return alert("Aucun passager descendu à clôturer.");
+if(!confirm("Voulez-vous vraiment clôturer cette session ?"))return;
+var t=totalAmount();
+var session={date:new Date().toLocaleDateString(),time:nowText(),driver:driverName,route:el("route").value,passengers:passengersCount(),total:t,commission:Math.round(t*0.15),net:t-Math.round(t*0.15),incidents:incidentActions};
+var sessions=JSON.parse(localStorage.getItem("taclar_sessions")||"[]");
+sessions.push(session);
+localStorage.setItem("taclar_sessions",JSON.stringify(sessions));
+localStorage.setItem("taclar_live",JSON.stringify({driver:session.driver,route:session.route,vehicle:"Taxi 001",status:"closed",onboard:0,free:4,start:session.time,last:"Session clôturée",incident:null,updated:nowText()}));
+alert("Session clôturée et envoyée vers Admin local.");
+resetForNewSession();
+}
 window.addEventListener("load",()=>{incidentTypes.forEach(i=>{var b=document.createElement("button");b.textContent=i;b.onclick=()=>reportIncident(i);el("incidentChoices").appendChild(b)});el("startBtn").onclick=startSession;seatList.forEach(c=>el("seat-"+c).onclick=()=>chooseSeat(c));document.querySelectorAll(".fare").forEach(b=>b.onclick=()=>addPassenger(Number(b.dataset.amount)));el("plus500").onclick=()=>adjust(500);el("minus500").onclick=()=>adjust(-500);el("plus1000").onclick=()=>adjust(1000);el("minus1000").onclick=()=>adjust(-1000);el("dropSeat").onclick=dropSeat;el("incidentBtn").onclick=()=>{if(!active)return alert("Démarre d’abord la session.");el("incidentModal").style.display="flex"};el("incidentCancel").onclick=()=>el("incidentModal").style.display="none";el("resolveIncident").onclick=()=>{currentIncident=null;el("status").textContent="Incident résolu";render()};el("infoBtn").onclick=()=>{el("pinInput").value="";el("pinModal").style.display="flex"};el("pinSubmit").onclick=()=>{if(el("pinInput").value===driverPin){el("pinModal").style.display="none";showInfo()}else alert("PIN incorrect.")};el("pinCancel").onclick=()=>el("pinModal").style.display="none";el("infoClose").onclick=()=>el("infoModal").style.display="none";el("close").onclick=closeSession;render()})
 </script></body></html>
