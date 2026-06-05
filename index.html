@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V10.4</title><style>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V10.8</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:430px;margin:auto;padding:10px;min-height:100vh}
@@ -34,7 +34,7 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 .reasonGrid button{margin:0}
 </style></head>
 <body><div class="app">
-<div class="badge">V10.4</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div>
+<div class="badge">V10.8</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div>
 <div class="card"><div class="grid2"><div><label>Axe</label><select id="route"><option>Okala → Aéroport</option><option>Akanda → Centre-ville</option><option>Nzeng-Ayong → Aéroport</option><option>Charbonnages → Louis</option><option>Owendo → Centre-ville</option><option>Sans axe fixe</option></select></div><div><label>Type véhicule</label><select id="vehicleType"><option value="4">Corolla - 4 places</option></select></div></div><br><label>Plaque véhicule</label><input id="plateInput" placeholder="Ex : LBV-1234"><br><br><label>Nom chauffeur</label><input id="driverNameInput" placeholder="Ex : Paul"><br><br><label>PIN chauffeur</label><input id="driverPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="1234"><br><br><button id="startBtn">Démarrer la session</button></div>
 <div class="summary"><div class="box"><small>À bord</small><strong><span id="onboard">0</span>/4</strong></div><div class="box"><small>Places libres</small><strong class="green" id="freeSeats">4</strong></div></div>
 <div class="card"><label>Plan des sièges</label><div class="seatMap"><div class="frontRow"><div class="driverSeat"><div><div style="font-size:12px">CHAUFFEUR</div><div id="driverNameDisplay" style="font-size:19px;font-weight:900">---</div></div></div><button class="seatBtn seatFree" id="seat-SP" data-seat="SP"><span class="code">SP</span><span class="amount">Libre</span></button></div><div class="backRow"><button class="seatBtn seatFree" id="seat-SG"><span class="code">SG</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SM"><span class="code">SM</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SD"><span class="code">SD</span><span class="amount">Libre</span></button></div></div>
@@ -119,9 +119,23 @@ el("cashExpected").textContent=money(totalAmount());
 el("cashTyped").textContent=money(0);
 el("cashModal").style.display="flex";
 }
+
+function minutesBetween(start,end){
+  if(!start||!end)return 0;
+  var a=start.split(":").map(Number), b=end.split(":").map(Number);
+  var m1=a[0]*60+a[1], m2=b[0]*60+b[1];
+  if(m2<m1)m2+=24*60;
+  return m2-m1;
+}
+function durationText(mins){
+  var h=Math.floor(mins/60), m=mins%60;
+  if(h>0)return h+" h "+String(m).padStart(2,"0");
+  return m+" min";
+}
+
 function completeClose(reason,cashReal,gap){
 var t=totalAmount();
-var session={date:new Date().toLocaleDateString(),time:nowText(),driver:driverName,plate:plateNumber,route:el("route").value,passengers:passengersCount(),total:t,cashReal:cashReal,gap:gap,justification:reason||"",commission:Math.round(t*0.15),net:t-Math.round(t*0.15),incidents:incidentActions};
+var endTime=nowText();var mins=minutesBetween(startTime,endTime);var session={date:new Date().toLocaleDateString(),start:startTime,end:endTime,duration:durationText(mins),minutes:mins,time:endTime,driver:driverName,plate:plateNumber,route:el("route").value,passengers:passengersCount(),total:t,cashReal:cashReal,gap:gap,justification:reason||"",commission:Math.round(t*0.15),net:t-Math.round(t*0.15),incidents:incidentActions};
 var sessions=JSON.parse(localStorage.getItem("taclar_sessions")||"[]");
 sessions.push(session);
 localStorage.setItem("taclar_sessions",JSON.stringify(sessions));
