@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.1.2.2</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.1.2.3</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -36,7 +36,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </style></head>
 <body>
 <div class="app">
-<div class="badge">ADMIN V12.1.2.2</div>
+<div class="badge">ADMIN V12.1.2.3</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 
@@ -191,12 +191,71 @@ function showDetail(i){
   document.getElementById('detailModal').style.display='flex';
 }
 function closeDetail(){document.getElementById('detailModal').style.display='none'}
-function deleteSession(i){
-  var s=getSessions(); if(!s[i])return;
-  if(confirm('Supprimer cette ligne Admin ?')){s.splice(i,1);saveSessions(s);render();}
+async function deleteSession(i){
+  var sessions=getSessions();
+  var session=sessions[i];
+  if(!confirm("Supprimer cette ligne ?"))return;
+  sessions.splice(i,1);
+  saveSessions(sessions);
+  await deleteSessionFromFirebase(session);
+  render();
 }
-function clearData(){
-  if(confirm('Effacer tous les rapports test ?')){localStorage.removeItem('taclar_sessions');render();}
+
+async function deleteCollectionAll(collectionName){
+  var total=0;
+  while(true){
+    var snap=await db.collection(collectionName).limit(400).get();
+    if(snap.empty)break;
+    var batch=db.batch();
+    snap.forEach(function(doc){batch.delete(doc.ref);total++;});
+    await batch.commit();
+    if(snap.size<400)break;
+  }
+  return total;
+}
+async function clearAdminFirebaseData(){
+  await deleteCollectionAll("groupage_sessions");
+  await deleteCollectionAll("groupage_live");
+}
+async function deleteSessionFromFirebase(session){
+  try{
+    if(!session)return;
+    if(session.sessionId){
+      await db.collection("groupage_sessions").doc(String(session.sessionId).replace(/[^a-zA-Z0-9_-]/g,"_")).delete().catch(function(){});
+      await db.collection("groupage_live").doc(String(session.sessionId).replace(/[^a-zA-Z0-9_-]/g,"_")).delete().catch(function(){});
+      return;
+    }
+    var snap=await db.collection("groupage_sessions").get();
+    var batch=db.batch();
+    var deleted=false;
+    snap.forEach(function(doc){
+      var x=doc.data();
+      if(!deleted &&
+        String(x.driver||"")===String(session.driver||"") &&
+        String(x.plate||"")===String(session.plate||"") &&
+        String(x.start||"")===String(session.start||"") &&
+        Number(x.total||0)===Number(session.total||0)){
+          batch.delete(doc.ref);
+          deleted=true;
+      }
+    });
+    if(deleted)await batch.commit();
+  }catch(e){console.log("deleteSessionFromFirebase error",e)}
+}
+
+async function clearData(){
+  if(!confirm("Effacer tous les rapports test ?"))return;
+  try{
+    localStorage.removeItem("taclar_sessions");
+    localStorage.removeItem("taclar_live");
+    localStorage.removeItem("taclar_dispatch_hidden");
+    await clearAdminFirebaseData();
+    render();
+    alert("Rapports test effacés dans Firebase.");
+  }catch(e){
+    console.log("Erreur effacement Firebase",e);
+    alert("Erreur : Firebase n’a pas tout effacé. Vérifie les règles Firestore.");
+  }
 }
 
 
