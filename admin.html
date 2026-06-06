@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V10.8</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V11.3</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -24,7 +24,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </style></head>
 <body>
 <div class="app">
-<div class="badge">ADMIN V10.8</div>
+<div class="badge">ADMIN V11.3</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 
@@ -44,7 +44,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 <h2>Rapport des sessions</h2>
 <table>
 <thead><tr>
-<th>Date</th><th>Début</th><th>Fin</th><th>Durée</th><th>Chauffeur</th><th>Plaque</th><th>Pass.</th><th>Montant</th><th>Comm.</th><th>Net</th><th>Inc.</th><th>Action</th>
+<th>Date</th><th>Début</th><th>Fin</th><th>Durée</th><th>Chauffeur</th><th>Plaque</th><th>Pass.</th><th>Cash</th><th>Airtel</th><th>Montant</th><th>Comm.</th><th>Net</th><th>Inc.</th><th>Action</th>
 </tr></thead>
 <tbody id="rows"></tbody>
 </table>
@@ -62,11 +62,18 @@ var currentSessions=[];
 function money(n){return String(n||0).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' FCFA'}
 function getSessions(){try{return JSON.parse(localStorage.getItem('taclar_sessions')||'[]')}catch(e){return []}}
 function saveSessions(s){localStorage.setItem('taclar_sessions',JSON.stringify(s))}
+function paymentTotal(x,mode){
+  var total=0;
+  (x.details||[]).forEach(function(a){
+    if(a.status==="descendu" && (a.payment||"Cash")===mode) total+=Number(a.amount||0);
+  });
+  return total;
+}
 function render(){
   var s=getSessions(); currentSessions=s;
   var rows=document.getElementById('rows'); rows.innerHTML='';
   var p=0,t=0,c=0;
-  if(s.length===0) rows.innerHTML='<tr><td colspan="12">Aucune session enregistrée.</td></tr>';
+  if(s.length===0) rows.innerHTML='<tr><td colspan="14">Aucune session enregistrée.</td></tr>';
   s.slice().reverse().forEach(function(x,revIndex){
     var i=s.length-1-revIndex;
     p+=Number(x.passengers||0); t+=Number(x.total||0); c+=Number(x.commission||0);
@@ -79,6 +86,8 @@ function render(){
       '<td>'+(x.driver||'---')+'</td>'+
       '<td><a href="#" onclick="showDetail('+i+')">'+(x.plate||'---')+'</a></td>'+
       '<td>'+(x.passengers||0)+'</td>'+
+      '<td>'+money(paymentTotal(x,"Cash"))+'</td>'+
+      '<td>'+money(paymentTotal(x,"Airtel Money"))+'</td>'+
       '<td>'+money(x.total)+'</td>'+
       '<td>'+money(x.commission)+'</td>'+
       '<td>'+money(x.net)+'</td>'+
@@ -103,6 +112,10 @@ function showDetail(i){
   html+='<div class="detailBox"><b>Durée :</b> '+(x.duration||'--')+'</div>';
   html+='<div class="detailBox"><b>Passagers :</b> '+(x.passengers||0)+'</div>';
   html+='<div class="detailBox"><b>Montant app :</b> '+money(x.total)+'</div>';
+  html+='<div class="detailBox"><b>Total Cash :</b> '+money(paymentTotal(x,"Cash"))+'</div>';
+  html+='<div class="detailBox"><b>Total Airtel Money :</b> '+money(paymentTotal(x,"Airtel Money"))+'</div>';
+  var det=(x.details||[]).filter(function(a){return a.status==="descendu"}).map(function(a){return (a.seat||"")+" - "+money(a.amount)+" - "+(a.payment||"Cash")}).join("<br>")||"Aucun détail";
+  html+='<div class="detailBox"><b>Détail paiements :</b><br>'+det+'</div>';
   html+='<div class="detailBox"><b>Cash réel :</b> '+money(x.cashReal||0)+'</div>';
   html+='<div class="detailBox"><b>Écart :</b> '+money(Math.abs(x.gap||0))+'</div>';
   html+='<div class="detailBox"><b>Justification :</b> '+(x.justification||'Aucune')+'</div>';
