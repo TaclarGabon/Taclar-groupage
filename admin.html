@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.1.2.5</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.2</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -40,10 +40,19 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 .accordionBody{display:none;margin-top:14px}
 .accordionBody.open{display:block}
 
+
+.driverGrid{display:grid;grid-template-columns:1fr 100px 1fr 1fr auto;gap:8px;margin-top:10px}
+.driverList{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.driverRow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px}
+.driverActions{display:flex;gap:6px;flex-wrap:wrap}
+.driverActions button{min-height:34px;font-size:12px;padding:6px 8px}
+.driverEditBox{display:none;background:rgba(94,234,212,.08);border:1px solid rgba(94,234,212,.30);border-radius:14px;padding:10px;margin-top:10px}
+@media(max-width:800px){.driverGrid,.driverRow{grid-template-columns:1fr}.driverActions{justify-content:flex-start}}
+
 </style></head>
 <body>
 <div class="app">
-<div class="badge">ADMIN V12.1.2.5</div>
+<div class="badge">ADMIN V12.2</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 
@@ -91,6 +100,37 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 
 </div>
 </div>
+
+<div class="card">
+<div class="accordionHead" onclick="toggleAccordion('driversBody','driversIcon')"><h2>Gestion des chauffeurs</h2><span class="accordionIcon" id="driversIcon">▶</span></div>
+<div class="accordionBody" id="driversBody">
+<p class="muted">Ajouter un chauffeur/chauffeuse. Le chauffeur choisira son nom et entrera son PIN.</p>
+
+<div class="driverGrid">
+<input id="driverName" placeholder="Nom ex : Paul" style="letter-spacing:0;text-align:left">
+<input id="driverPin" placeholder="PIN" style="letter-spacing:0;text-align:left">
+<input id="driverPhone" placeholder="Téléphone" style="letter-spacing:0;text-align:left">
+<input id="driverPlate" placeholder="Plaque associée" style="letter-spacing:0;text-align:left">
+<button onclick="addDriver()">Ajouter chauffeur</button>
+</div>
+
+<div class="driverEditBox" id="editDriverBox">
+<h3>Modifier chauffeur</h3>
+<div class="driverGrid">
+<input id="editDriverName" placeholder="Nom" style="letter-spacing:0;text-align:left">
+<input id="editDriverPin" placeholder="PIN" style="letter-spacing:0;text-align:left">
+<input id="editDriverPhone" placeholder="Téléphone" style="letter-spacing:0;text-align:left">
+<input id="editDriverPlate" placeholder="Plaque associée" style="letter-spacing:0;text-align:left">
+<button onclick="saveDriverEdit()">Enregistrer</button>
+</div>
+<br>
+<button class="btn-dark" onclick="cancelDriverEdit()">Annuler</button>
+</div>
+
+<div class="driverList" id="driverList"></div>
+</div>
+</div>
+
 <div class="card">
 <div class="accordionHead" onclick="toggleAccordion('reportBody','reportIcon')"><h2>Rapport des sessions</h2><span class="accordionIcon" id="reportIcon">▼</span></div>
 <div class="accordionBody open" id="reportBody">
@@ -508,6 +548,115 @@ function deleteAxis(id){
   if(confirm("Supprimer cet axe ?")) db.collection("groupage_axes").doc(id).delete();
 }
 
-render();startFirebaseAdmin();startAxesAdmin();
+
+var editingDriverId=null;
+
+function normalizeDriverName(s){
+  s=String(s||"").trim().replace(/\s+/g," ");
+  if(!s)return "";
+  return s.split(" ").map(function(p){return p.charAt(0).toUpperCase()+p.slice(1).toLowerCase()}).join(" ");
+}
+function driverKey(s){
+  return String(s||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+function seedDefaultDrivers(){
+  var defaults=[
+    {name:"Paul",pin:"1234",phone:"",plate:"LBV1234",active:true},
+    {name:"Robert",pin:"1234",phone:"",plate:"GA5678",active:true},
+    {name:"Ines",pin:"1234",phone:"",plate:"LBV548",active:true}
+  ];
+  db.collection("groupage_drivers").get().then(function(snap){
+    if(!snap.empty)return;
+    defaults.forEach(function(d){
+      db.collection("groupage_drivers").add(Object.assign({},d,{createdAt:firebase.firestore.FieldValue.serverTimestamp()}));
+    });
+  });
+}
+function startDriversAdmin(){
+  try{
+    seedDefaultDrivers();
+    db.collection("groupage_drivers").orderBy("name").onSnapshot(function(snapshot){
+      var list=document.getElementById("driverList");
+      if(!list)return;
+      list.innerHTML="";
+      snapshot.forEach(function(doc){
+        var d=doc.data();
+        var row=document.createElement("div");
+        row.className="driverRow";
+        var left=document.createElement("div");
+        left.innerHTML="<b>"+safeText(d.name||"---")+"</b><br><span class='muted'>PIN : "+safeText(d.pin||"---")+" · Tél : "+safeText(d.phone||"---")+" · Plaque : "+safeText(d.plate||"---")+" · "+(d.active===false?"Inactif":"Actif")+"</span>";
+        var actions=document.createElement("div");
+        actions.className="driverActions";
+        var edit=document.createElement("button");
+        edit.className="btn-dark";edit.textContent="Modifier";
+        edit.onclick=function(){openDriverEdit(doc.id,d)};
+        var toggle=document.createElement("button");
+        toggle.className="btn-dark";toggle.textContent=d.active===false?"Activer":"Désactiver";
+        toggle.onclick=function(){toggleDriver(doc.id,d.active===false)};
+        var del=document.createElement("button");
+        del.className="btn-red";del.textContent="Supprimer";
+        del.onclick=function(){deleteDriver(doc.id)};
+        actions.appendChild(edit);actions.appendChild(toggle);actions.appendChild(del);
+        row.appendChild(left);row.appendChild(actions);
+        list.appendChild(row);
+      });
+    });
+  }catch(e){console.log("drivers admin error",e)}
+}
+async function driverExists(name){
+  var key=driverKey(name);
+  var snap=await db.collection("groupage_drivers").get();
+  var found=false;
+  snap.forEach(function(doc){
+    if(driverKey(doc.data().name)===key)found=true;
+  });
+  return found;
+}
+async function addDriver(){
+  var name=normalizeDriverName(document.getElementById("driverName").value);
+  var pin=String(document.getElementById("driverPin").value||"").trim();
+  var phone=String(document.getElementById("driverPhone").value||"").trim();
+  var plate=String(document.getElementById("driverPlate").value||"").trim().toUpperCase();
+  if(!name)return alert("Écrire le nom du chauffeur.");
+  if(!pin)return alert("Écrire le PIN.");
+  if(await driverExists(name))return alert("Ce chauffeur existe déjà.");
+  await db.collection("groupage_drivers").add({name:name,pin:pin,phone:phone,plate:plate,active:true,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  document.getElementById("driverName").value="";
+  document.getElementById("driverPin").value="";
+  document.getElementById("driverPhone").value="";
+  document.getElementById("driverPlate").value="";
+}
+function openDriverEdit(id,d){
+  editingDriverId=id;
+  document.getElementById("editDriverName").value=d.name||"";
+  document.getElementById("editDriverPin").value=d.pin||"";
+  document.getElementById("editDriverPhone").value=d.phone||"";
+  document.getElementById("editDriverPlate").value=d.plate||"";
+  document.getElementById("editDriverBox").style.display="block";
+  document.getElementById("editDriverBox").scrollIntoView({behavior:"smooth",block:"center"});
+}
+function cancelDriverEdit(){
+  editingDriverId=null;
+  document.getElementById("editDriverBox").style.display="none";
+}
+async function saveDriverEdit(){
+  if(!editingDriverId)return;
+  var name=normalizeDriverName(document.getElementById("editDriverName").value);
+  var pin=String(document.getElementById("editDriverPin").value||"").trim();
+  var phone=String(document.getElementById("editDriverPhone").value||"").trim();
+  var plate=String(document.getElementById("editDriverPlate").value||"").trim().toUpperCase();
+  if(!name||!pin)return alert("Nom et PIN obligatoires.");
+  await db.collection("groupage_drivers").doc(editingDriverId).update({name:name,pin:pin,phone:phone,plate:plate,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  cancelDriverEdit();
+}
+function toggleDriver(id,state){
+  db.collection("groupage_drivers").doc(id).update({active:state,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+}
+function deleteDriver(id){
+  if(confirm("Supprimer ce chauffeur ?"))db.collection("groupage_drivers").doc(id).delete();
+}
+
+
+render();startFirebaseAdmin();startDriversAdmin();startAxesAdmin();
 </script>
 </body></html>
