@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V11.3</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -24,7 +24,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </style></head>
 <body>
 <div class="app">
-<div class="badge">ADMIN V11.3</div>
+<div class="badge">ADMIN V12</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 
@@ -57,11 +57,37 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 <button class="btn-dark" onclick="closeDetail()">Fermer</button>
 </div></div>
 
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyC_JNVVGrd2whXRGfHuOlShhmZfaLQFLfw",
+  authDomain: "taclar-52e72.firebaseapp.com",
+  projectId: "taclar-52e72",
+  storageBucket: "taclar-52e72.firebasestorage.app",
+  messagingSenderId: "501812718028",
+  appId: "1:501812718028:web:45842bcde3db9049ec9569"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+</script>
+
 <script>
 var currentSessions=[];
 function money(n){return String(n||0).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' FCFA'}
 function getSessions(){try{return JSON.parse(localStorage.getItem('taclar_sessions')||'[]')}catch(e){return []}}
 function saveSessions(s){localStorage.setItem('taclar_sessions',JSON.stringify(s))}
+function startFirebaseAdmin(){
+  try{
+    db.collection('groupage_sessions').orderBy('updatedAt','desc').onSnapshot(function(snapshot){
+      var s=[];
+      snapshot.forEach(function(doc){s.push(doc.data())});
+      localStorage.setItem('taclar_sessions',JSON.stringify(s));
+      render();
+    });
+  }catch(e){console.log('firebase admin error',e)}
+}
 function paymentTotal(x,mode){
   var total=0;
   (x.details||[]).forEach(function(a){
@@ -131,6 +157,6 @@ function deleteSession(i){
 function clearData(){
   if(confirm('Effacer tous les rapports test ?')){localStorage.removeItem('taclar_sessions');render();}
 }
-render();
+render();startFirebaseAdmin();
 </script>
 </body></html>
