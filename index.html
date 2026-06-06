@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V12.1.2.1</title><style>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V12.1.2.2</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:430px;margin:auto;padding:10px;min-height:100vh}
@@ -37,7 +37,7 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 .resumeBox button{margin-top:8px}
 </style></head>
 <body><div class="app">
-<div class="badge">V12.1.2.1</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div><div class="resumeBox" id="resumeBox"><b>Session active détectée</b><div id="resumeText"></div><button id="resumeBtn">Reprendre session</button><button class="btn-red" id="discardResumeBtn">Nouvelle session</button></div>
+<div class="badge">V12.1.2.2</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div><div class="resumeBox" id="resumeBox"><b>Session active détectée</b><div id="resumeText"></div><button id="resumeBtn">Reprendre session</button><button class="btn-red" id="discardResumeBtn">Nouvelle session</button></div>
 <div class="card"><div class="grid2"><div><label>Axe</label><select id="route"><option>Okala → Aéroport</option><option>Akanda → Centre-ville</option><option>Nzeng-Ayong → Aéroport</option><option>Charbonnages → Louis</option><option>Owendo → Centre-ville</option><option>Sans axe fixe</option></select></div><div><label>Type véhicule</label><select id="vehicleType"><option value="4">Corolla - 4 places</option></select></div></div><br><label>Plaque véhicule</label><input id="plateInput" placeholder="Ex : LBV-1234"><br><br><label>Nom chauffeur</label><input id="driverNameInput" placeholder="Ex : Paul"><br><br><label>PIN chauffeur</label><input id="driverPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="1234"><br><br><button id="startBtn">Démarrer la session</button></div>
 <div class="summary"><div class="box"><small>À bord</small><strong><span id="onboard">0</span>/4</strong></div><div class="box"><small>Places libres</small><strong class="green" id="freeSeats">4</strong></div></div>
 <div class="card"><label>Plan des sièges</label><div class="seatMap"><div class="frontRow"><div class="driverSeat"><div><div style="font-size:12px">CHAUFFEUR</div><div id="driverNameDisplay" style="font-size:19px;font-weight:900">---</div></div></div><button class="seatBtn seatFree" id="seat-SP" data-seat="SP"><span class="code">SP</span><span class="amount">Libre</span></button></div><div class="backRow"><button class="seatBtn seatFree" id="seat-SG"><span class="code">SG</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SM"><span class="code">SM</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SD"><span class="code">SD</span><span class="amount">Libre</span></button></div></div>
@@ -171,29 +171,7 @@ function startAxesListener(){
 }
 
 function firebaseSafeId(v){return String(v||"").replace(/[^a-zA-Z0-9_-]/g,"_") || ("S"+Date.now())}
-async 
-async function cloudClearSameVehicleOpenSessions(){
-  try{
-    if(typeof db==="undefined")return;
-    var plate=(plateNumber||"").trim().toLowerCase();
-    var driver=(driverName||"").trim().toLowerCase();
-    var snap=await db.collection("groupage_live").get();
-    var batch=db.batch();
-    var count=0;
-    snap.forEach(function(doc){
-      var x=doc.data();
-      var samePlate=String(x.plate||"").trim().toLowerCase()===plate && plate;
-      var sameDriver=String(x.driver||"").trim().toLowerCase()===driver && driver;
-      if((samePlate||sameDriver) && x.status!=="closed"){
-        batch.delete(doc.ref);
-        count++;
-      }
-    });
-    if(count>0)await batch.commit();
-  }catch(e){console.log("cloudClearSameVehicleOpenSessions",e)}
-}
-
-function cloudSaveLive(status){
+async function cloudSaveLive(status){
   try{
     if(typeof db==="undefined" || !sessionId)return;
     var live={
@@ -245,24 +223,15 @@ function saveLive(status){
 function showResumeIfAny(){
   try{
     var snap=JSON.parse(localStorage.getItem("taclar_driver_session")||"null");
-    if(snap && snap.active){
+    if(snap&&snap.active){
       el("resumeBox").style.display="block";
       el("resumeText").textContent=(snap.driverName||"---")+" · "+(snap.plateNumber||"---")+" · "+(snap.route||"---")+" · début "+(snap.startTime||"--:--");
-    }else{
-      el("resumeBox").style.display="none";
     }
-  }catch(e){
-    el("resumeBox").style.display="none";
-  }
+  }catch(e){}
 }
 function restoreSession(){
   var snap=JSON.parse(localStorage.getItem("taclar_driver_session")||"null");
-  if(!snap||!snap.active){
-    localStorage.removeItem("taclar_driver_session");
-    el("resumeBox").style.display="none";
-    alert("Aucune session active à reprendre.");
-    return;
-  }
+  if(!snap||!snap.active){alert("Aucune session active à reprendre.");return;}
   restoring=true;active=!!snap.active;sessionId=snap.sessionId||("S"+Date.now());driverName=snap.driverName||"";driverPin=snap.driverPin||"1234";plateNumber=snap.plateNumber||"";startTime=snap.startTime||nowText();selectedSeat=snap.selectedSeat||null;seats=snap.seats||seats;publicActions=snap.publicActions||[];privateActions=snap.privateActions||[];incidentActions=snap.incidentActions||[];currentIncident=snap.currentIncident||null;
   el("route").value=snap.route||el("route").value;el("vehicleType").value=snap.vehicleType||el("vehicleType").value;el("plateInput").value=plateNumber;el("driverNameInput").value=driverName;el("driverPinInput").value=driverPin;el("driverNameDisplay").textContent=driverName||"---";
   el("plateInput").disabled=true;el("driverNameInput").disabled=true;el("driverPinInput").disabled=true;el("route").disabled=true;el("vehicleType").disabled=true;el("startBtn").disabled=true;el("resumeBox").style.display="none";el("status").textContent=snap.statusText||("Session active - "+driverName);
@@ -286,7 +255,7 @@ cloudCloseSession(session);
 function addPublicAction(t){publicActions.push(t);if(publicActions.length>4)publicActions=publicActions.slice(publicActions.length-4)}
 function render(){el("onboard").textContent=countOnboard();el("freeSeats").textContent=4-countOnboard();seatList.forEach(c=>{var btn=el("seat-"+c),amt=btn.querySelector(".amount");if(seats[c].occupied){btn.className="seatBtn seatBusy";amt.textContent="Occupé"}else{btn.className="seatBtn seatFree";amt.textContent="Libre"}});if(currentIncident){el("incidentAlert").style.display="block";el("incidentAlertText").textContent=currentIncident.time+" · "+currentIncident.reason}else{el("incidentAlert").style.display="none"};var ph=el("publicHistory");if(publicActions.length===0)ph.textContent="Aucune action.";else{ph.innerHTML="";publicActions.slice().reverse().forEach(t=>{var r=document.createElement("div");r.className="row";r.innerHTML="<span>"+t+"</span><b>OK</b>";ph.appendChild(r)})}; if(active)saveSession(currentIncident?'incident':'service')}
 function hidePanels(){el("farePanel").style.display="none";el("seatPanel").style.display="none"}
-function startSession(){var n=el("driverNameInput").value.trim(),p=el("driverPinInput").value.trim();var plate=el("plateInput").value.trim();if(!plate)return alert("Entre la plaque du véhicule.");if(!n)return alert("Entre le nom du chauffeur."); if(!p)return alert("Entre le PIN chauffeur.");driverName=n;driverPin=p;plateNumber=plate;active=true;sessionId="S"+Date.now();startTime=nowText();cloudClearSameVehicleOpenSessions();publicActions=[];privateActions=[];incidentActions=[];currentIncident=null;seatList.forEach(s=>{seats[s].amount=0;seats[s].occupied=false});el("driverNameDisplay").textContent=driverName;el("plateInput").disabled=true;el("driverNameInput").disabled=true;el("driverPinInput").disabled=true;el("route").disabled=true;el("vehicleType").disabled=true;el("startBtn").disabled=true;el("status").textContent="Session active - "+driverName;render()}
+function startSession(){var n=el("driverNameInput").value.trim(),p=el("driverPinInput").value.trim();var plate=el("plateInput").value.trim();if(!plate)return alert("Entre la plaque du véhicule.");if(!n)return alert("Entre le nom du chauffeur."); if(!p)return alert("Entre le PIN chauffeur.");driverName=n;driverPin=p;plateNumber=plate;active=true;sessionId="S"+Date.now();startTime=nowText();publicActions=[];privateActions=[];incidentActions=[];currentIncident=null;seatList.forEach(s=>{seats[s].amount=0;seats[s].occupied=false});el("driverNameDisplay").textContent=driverName;el("plateInput").disabled=true;el("driverNameInput").disabled=true;el("driverPinInput").disabled=true;el("route").disabled=true;el("vehicleType").disabled=true;el("startBtn").disabled=true;el("status").textContent="Session active - "+driverName;render()}
 function chooseSeat(c){if(!active)return alert("Démarre d'abord la session.");selectedSeat=c;hidePanels();if(seats[c].occupied){el("seatPanelTitle").textContent=c+" occupé";el("seatPanel").style.display="block"}else{el("farePanel").style.display="grid"}}
 function addPassenger(a){
 pendingAmount=a;
