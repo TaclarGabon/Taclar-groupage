@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V11.3.3</title><style>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V11.4.3</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:430px;margin:auto;padding:10px;min-height:100vh}
@@ -37,7 +37,7 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 .resumeBox button{margin-top:8px}
 </style></head>
 <body><div class="app">
-<div class="badge">V11.3</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div><div class="resumeBox" id="resumeBox"><b>Session active détectée</b><div id="resumeText"></div><button id="resumeBtn">Reprendre session</button><button class="btn-red" id="discardResumeBtn">Nouvelle session</button></div>
+<div class="badge">V11.4</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div><div class="resumeBox" id="resumeBox"><b>Session active détectée</b><div id="resumeText"></div><button id="resumeBtn">Reprendre session</button><button class="btn-red" id="discardResumeBtn">Nouvelle session</button></div>
 <div class="card"><div class="grid2"><div><label>Axe</label><select id="route"><option>Okala → Aéroport</option><option>Akanda → Centre-ville</option><option>Nzeng-Ayong → Aéroport</option><option>Charbonnages → Louis</option><option>Owendo → Centre-ville</option><option>Sans axe fixe</option></select></div><div><label>Type véhicule</label><select id="vehicleType"><option value="4">Corolla - 4 places</option></select></div></div><br><label>Plaque véhicule</label><input id="plateInput" placeholder="Ex : LBV-1234"><br><br><label>Nom chauffeur</label><input id="driverNameInput" placeholder="Ex : Paul"><br><br><label>PIN chauffeur</label><input id="driverPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="1234"><br><br><button id="startBtn">Démarrer la session</button></div>
 <div class="summary"><div class="box"><small>À bord</small><strong><span id="onboard">0</span>/4</strong></div><div class="box"><small>Places libres</small><strong class="green" id="freeSeats">4</strong></div></div>
 <div class="card"><label>Plan des sièges</label><div class="seatMap"><div class="frontRow"><div class="driverSeat"><div><div style="font-size:12px">CHAUFFEUR</div><div id="driverNameDisplay" style="font-size:19px;font-weight:900">---</div></div></div><button class="seatBtn seatFree" id="seat-SP" data-seat="SP"><span class="code">SP</span><span class="amount">Libre</span></button></div><div class="backRow"><button class="seatBtn seatFree" id="seat-SG"><span class="code">SG</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SM"><span class="code">SM</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SD"><span class="code">SD</span><span class="amount">Libre</span></button></div></div>
@@ -59,7 +59,7 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 <button class="numKey" data-n="1">1</button><button class="numKey" data-n="2">2</button><button class="numKey" data-n="3">3</button>
 <button class="numKey" data-n="4">4</button><button class="numKey" data-n="5">5</button><button class="numKey" data-n="6">6</button>
 <button class="numKey" data-n="7">7</button><button class="numKey" data-n="8">8</button><button class="numKey" data-n="9">9</button>
-<button id="cashClear" class="btn-red">Effacer</button><button class="numKey" data-n="0">0</button><button id="cashOk">OK</button>
+<button id="cashBack" class="btn-dark">⌫</button><button class="numKey" data-n="0">0</button><button id="cashOk">OK</button><button id="cashClear" class="btn-red">Effacer</button>
 </div>
 <button class="btn-dark" id="cashCancel">Annuler</button>
 </div></div>
@@ -90,6 +90,7 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 <p class="muted">Montant sélectionné : <b id="paymentAmount">0 FCFA</b></p>
 <button id="payCash">Cash</button>
 <button id="payAirtel" class="btn-yellow">Airtel Money</button>
+<button id="payMoov" class="btn-yellow">Moov Money</button>
 <button class="btn-dark" id="paymentCancel">Annuler</button>
 </div></div>
 
@@ -168,6 +169,8 @@ el("paymentModal").style.display="flex";
 }
 function confirmPassenger(payment){
 if(!selectedSeat)return;
+var ok=confirm("Confirmer paiement :\n"+money(pendingAmount)+" — "+payment+" ?");
+if(!ok)return;
 seats[selectedSeat].amount=pendingAmount;
 seats[selectedSeat].occupied=true;
 privateActions.push({seat:selectedSeat,amount:pendingAmount,payment:payment,status:"à bord",time:nowText()});
@@ -243,7 +246,7 @@ el("plateInput").value="";el("driverNameInput").value="";el("driverPinInput").va
 el("status").textContent="Choisir un axe puis démarrer";
 hidePanels();render();
 }
-window.addEventListener("load",()=>{incidentTypes.forEach(i=>{var b=document.createElement("button");b.textContent=i;b.onclick=()=>reportIncident(i);el("incidentChoices").appendChild(b)});el("startBtn").onclick=startSession;seatList.forEach(c=>el("seat-"+c).onclick=()=>chooseSeat(c));document.querySelectorAll(".fare").forEach(b=>b.onclick=()=>addPassenger(Number(b.dataset.amount)));el("plus500").onclick=()=>adjust(500);el("minus500").onclick=()=>adjust(-500);el("plus1000").onclick=()=>adjust(1000);el("minus1000").onclick=()=>adjust(-1000);el("dropSeat").onclick=dropSeat;el("incidentBtn").onclick=()=>{if(!active)return alert("Démarre d’abord la session.");el("incidentModal").style.display="flex"};el("incidentCancel").onclick=()=>el("incidentModal").style.display="none";el("resolveIncident").onclick=()=>{currentIncident=null;el("status").textContent="Incident résolu";render()};el("infoBtn").onclick=()=>{el("pinInput").value="";el("pinModal").style.display="flex"};el("pinSubmit").onclick=()=>{if(el("pinInput").value===driverPin){el("pinModal").style.display="none";showInfo()}else alert("PIN incorrect.")};el("pinCancel").onclick=()=>el("pinModal").style.display="none";el("infoClose").onclick=()=>el("infoModal").style.display="none";el("dropAllSeats").onclick=dropAllSeats;el("payCash").onclick=()=>confirmPassenger("Cash");el("payAirtel").onclick=()=>confirmPassenger("Airtel Money");el("paymentCancel").onclick=()=>{el("paymentModal").style.display="none";pendingAmount=0};el("close").onclick=closeSession;
+window.addEventListener("load",()=>{incidentTypes.forEach(i=>{var b=document.createElement("button");b.textContent=i;b.onclick=()=>reportIncident(i);el("incidentChoices").appendChild(b)});el("startBtn").onclick=startSession;seatList.forEach(c=>el("seat-"+c).onclick=()=>chooseSeat(c));document.querySelectorAll(".fare").forEach(b=>b.onclick=()=>addPassenger(Number(b.dataset.amount)));el("plus500").onclick=()=>adjust(500);el("minus500").onclick=()=>adjust(-500);el("plus1000").onclick=()=>adjust(1000);el("minus1000").onclick=()=>adjust(-1000);el("dropSeat").onclick=dropSeat;el("incidentBtn").onclick=()=>{if(!active)return alert("Démarre d’abord la session.");el("incidentModal").style.display="flex"};el("incidentCancel").onclick=()=>el("incidentModal").style.display="none";el("resolveIncident").onclick=()=>{currentIncident=null;el("status").textContent="Incident résolu";render()};el("infoBtn").onclick=()=>{el("pinInput").value="";el("pinModal").style.display="flex"};el("pinSubmit").onclick=()=>{if(el("pinInput").value===driverPin){el("pinModal").style.display="none";showInfo()}else alert("PIN incorrect.")};el("pinCancel").onclick=()=>el("pinModal").style.display="none";el("infoClose").onclick=()=>el("infoModal").style.display="none";el("dropAllSeats").onclick=dropAllSeats;el("payCash").onclick=()=>confirmPassenger("Cash");el("payAirtel").onclick=()=>confirmPassenger("Airtel Money");el("payMoov").onclick=()=>confirmPassenger("Moov Money");el("paymentCancel").onclick=()=>{el("paymentModal").style.display="none";pendingAmount=0};el("close").onclick=closeSession;
 el("resumeBtn").onclick=restoreSession;
 el("discardResumeBtn").onclick=discardSavedSession;
 el("customIncidentConfirm").onclick=()=>{var txt=el("customIncidentInput").value.trim();if(!txt)return alert("Écrire le motif.");if(!confirm("Confirmer incident : "+txt+" ?"))return;currentIncident={reason:txt,time:nowText(),driver:driverName};incidentActions.push(currentIncident);el("status").textContent="Incident signalé : "+txt;el("customIncidentModal").style.display="none";render()};
@@ -251,7 +254,7 @@ el("customIncidentCancel").onclick=()=>{el("customIncidentModal").style.display=
 showResumeIfAny();
 
 document.querySelectorAll(".numKey").forEach(b=>b.onclick=()=>{cashInput+=b.dataset.n;cashInput=cashInput.replace(/^0+/,"");if(cashInput==="")cashInput="0";el("cashTyped").textContent=money(Number(cashInput))});
-el("cashClear").onclick=()=>{cashInput="";el("cashTyped").textContent=money(0)};
+el("cashClear").onclick=()=>{cashInput="";el("cashTyped").textContent=money(0)};el("cashBack").onclick=()=>{cashInput=String(cashInput||"").slice(0,-1);el("cashTyped").textContent=money(Number(cashInput||"0"))};
 el("cashCancel").onclick=()=>{el("cashModal").style.display="none"};
 el("cashOk").onclick=()=>{var expected=totalAmount();var real=Number(cashInput||"0");pendingCash=real;pendingGap=expected-real;if(real===expected){el("cashModal").style.display="none";completeClose("",real,0)}else{el("cashModal").style.display="none";el("gapText").textContent="Écart caisse : "+money(Math.abs(pendingGap))+(pendingGap>0?" manquant":" en plus");el("gapModal").style.display="flex"}};
 el("gapCorrect").onclick=()=>{el("gapModal").style.display="none";cashInput="";el("cashTyped").textContent=money(0);el("cashModal").style.display="flex"};
