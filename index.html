@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V11</title><style>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V11.1</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:430px;margin:auto;padding:10px;min-height:100vh}
@@ -37,7 +37,7 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 .resumeBox button{margin-top:8px}
 </style></head>
 <body><div class="app">
-<div class="badge">V11</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div><div class="resumeBox" id="resumeBox"><b>Session active détectée</b><div id="resumeText"></div><button id="resumeBtn">Reprendre session</button><button class="btn-red" id="discardResumeBtn">Nouvelle session</button></div>
+<div class="badge">V11.1</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div><div class="resumeBox" id="resumeBox"><b>Session active détectée</b><div id="resumeText"></div><button id="resumeBtn">Reprendre session</button><button class="btn-red" id="discardResumeBtn">Nouvelle session</button></div>
 <div class="card"><div class="grid2"><div><label>Axe</label><select id="route"><option>Okala → Aéroport</option><option>Akanda → Centre-ville</option><option>Nzeng-Ayong → Aéroport</option><option>Charbonnages → Louis</option><option>Owendo → Centre-ville</option><option>Sans axe fixe</option></select></div><div><label>Type véhicule</label><select id="vehicleType"><option value="4">Corolla - 4 places</option></select></div></div><br><label>Plaque véhicule</label><input id="plateInput" placeholder="Ex : LBV-1234"><br><br><label>Nom chauffeur</label><input id="driverNameInput" placeholder="Ex : Paul"><br><br><label>PIN chauffeur</label><input id="driverPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="1234"><br><br><button id="startBtn">Démarrer la session</button></div>
 <div class="summary"><div class="box"><small>À bord</small><strong><span id="onboard">0</span>/4</strong></div><div class="box"><small>Places libres</small><strong class="green" id="freeSeats">4</strong></div></div>
 <div class="card"><label>Plan des sièges</label><div class="seatMap"><div class="frontRow"><div class="driverSeat"><div><div style="font-size:12px">CHAUFFEUR</div><div id="driverNameDisplay" style="font-size:19px;font-weight:900">---</div></div></div><button class="seatBtn seatFree" id="seat-SP" data-seat="SP"><span class="code">SP</span><span class="amount">Libre</span></button></div><div class="backRow"><button class="seatBtn seatFree" id="seat-SG"><span class="code">SG</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SM"><span class="code">SM</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SD"><span class="code">SD</span><span class="amount">Libre</span></button></div></div>
@@ -134,7 +134,16 @@ function restoreSession(){
 }
 function discardSavedSession(){
   if(confirm("Effacer la session active sauvegardée et commencer une nouvelle session ?")){
-    localStorage.removeItem("taclar_driver_session");localStorage.removeItem("taclar_live");el("resumeBox").style.display="none";resetForNewSession();
+    localStorage.removeItem("taclar_driver_session");
+    localStorage.removeItem("taclar_live");
+    el("resumeBox").style.display="none";
+    active=false;selectedSeat=null;startTime=null;driverName="";driverPin="1234";plateNumber="";currentIncident=null;cashInput="";pendingGap=0;pendingCash=0;sessionId=null;
+    seatList.forEach(s=>{seats[s].amount=0;seats[s].occupied=false});
+    publicActions=[];privateActions=[];incidentActions=[];
+    el("plateInput").disabled=false;el("driverNameInput").disabled=false;el("driverPinInput").disabled=false;el("route").disabled=false;el("vehicleType").disabled=false;el("startBtn").disabled=false;
+    el("plateInput").value="";el("driverNameInput").value="";el("driverPinInput").value="";el("driverNameDisplay").textContent="---";
+    el("status").textContent="Choisir un axe puis démarrer";
+    hidePanels();render();
   }
 }
 function addPublicAction(t){publicActions.push(t);if(publicActions.length>4)publicActions=publicActions.slice(publicActions.length-4)}
@@ -148,6 +157,8 @@ function dropSeat(){if(!confirm("Confirmer que "+selectedSeat+" est descendu ?")
 function reportIncident(r){if(r==="Autre"){el("incidentModal").style.display="none";el("customIncidentInput").value="";el("customIncidentModal").style.display="flex";return}if(!confirm("Confirmer incident : "+r+" ?"))return;currentIncident={reason:r,time:nowText(),driver:driverName};incidentActions.push(currentIncident);el("status").textContent="Incident signalé : "+r;el("incidentModal").style.display="none";render()}
 function showInfo(){el("infoDriver").textContent=driverName;el("infoPassengers").textContent=passengersCount();el("infoTotal").textContent=money(totalAmount());el("infoStart").textContent=startTime;var list=el("privateHistory");list.innerHTML="";privateActions.slice().reverse().forEach(a=>{var r=document.createElement("div");r.className="row";r.innerHTML="<span>"+a.seat+" · "+a.status+"</span><b>"+money(a.amount)+"</b>";list.appendChild(r)});incidentActions.slice().reverse().forEach(i=>{var r=document.createElement("div");r.className="row";r.innerHTML="<span>Incident · "+i.reason+" · "+i.time+"</span><b>ALERTE</b>";list.appendChild(r)});el("infoModal").style.display="flex"}
 function resetForNewSession(){
+localStorage.removeItem("taclar_driver_session");
+el("resumeBox").style.display="none";
 active=false;selectedSeat=null;startTime=null;driverName="";driverPin="1234";currentIncident=null;
 seatList.forEach(s=>{seats[s].amount=0;seats[s].occupied=false});
 publicActions=[];privateActions=[];incidentActions=[];
@@ -182,15 +193,24 @@ function durationText(mins){
 
 function completeClose(reason,cashReal,gap){
 var t=totalAmount();
-var endTime=nowText();var mins=minutesBetween(startTime,endTime);var session={date:new Date().toLocaleDateString(),start:startTime,end:endTime,duration:durationText(mins),minutes:mins,time:endTime,driver:driverName,plate:plateNumber,route:el("route").value,passengers:passengersCount(),total:t,cashReal:cashReal,gap:gap,justification:reason||"",commission:Math.round(t*0.15),net:t-Math.round(t*0.15),incidents:incidentActions};
+var endTime=nowText();
+var mins=minutesBetween(startTime,endTime);
+var closedId=sessionId||("S"+Date.now());
+var session={sessionId:closedId,date:new Date().toLocaleDateString(),start:startTime,end:endTime,duration:durationText(mins),minutes:mins,time:endTime,driver:driverName,plate:plateNumber,route:el("route").value,passengers:passengersCount(),total:t,cashReal:cashReal,gap:gap,justification:reason||"",commission:Math.round(t*0.15),net:t-Math.round(t*0.15),incidents:incidentActions};
 var sessions=JSON.parse(localStorage.getItem("taclar_sessions")||"[]");
-sessions.push(session);
-localStorage.setItem("taclar_sessions",JSON.stringify(sessions));
-localStorage.setItem("taclar_live",JSON.stringify({driver:session.driver,route:session.route,vehicle:plateNumber||"Taxi 001",status:"closed",onboard:0,free:4,start:session.time,last:"Session clôturée",incident:null,updated:nowText()}));
-alert("Session clôturée.\nDonnées envoyées à l'Admin local.");
+var exists=sessions.some(function(s){return s.sessionId===closedId});
+if(!exists){
+  sessions.push(session);
+  localStorage.setItem("taclar_sessions",JSON.stringify(sessions));
+}
+localStorage.removeItem("taclar_driver_session");
+localStorage.setItem("taclar_live",JSON.stringify({driver:session.driver,route:session.route,vehicle:plateNumber||"Taxi 001",status:"closed",onboard:0,free:4,start:session.start,last:"Session clôturée",incident:null,updated:endTime}));
+alert(exists?"Session déjà enregistrée. Aucun doublon ajouté.":"Session clôturée.\nDonnées envoyées à l'Admin local.");
 resetForNewSession();
 }
 function resetForNewSession(){
+localStorage.removeItem("taclar_driver_session");
+el("resumeBox").style.display="none";
 active=false;selectedSeat=null;startTime=null;driverName="";driverPin="1234";plateNumber="";currentIncident=null;cashInput="";pendingGap=0;pendingCash=0;sessionId=null;
 seatList.forEach(s=>{seats[s].amount=0;seats[s].occupied=false});
 publicActions=[];privateActions=[];incidentActions=[];
