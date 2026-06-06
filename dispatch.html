@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V11.2</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V12</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -27,7 +27,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </style></head>
 <body>
 <div class="app">
-<div class="badge">DISPATCH V11.2</div>
+<div class="badge">DISPATCH V12</div>
 <h1>TACLAR Dispatch</h1>
 <div class="subtitle">Suivi opérationnel — Groupage</div>
 
@@ -54,6 +54,22 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 <button class="btn-dark" onclick="closeDetail()">Fermer</button>
 </div></div>
 
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyC_JNVVGrd2whXRGfHuOlShhmZfaLQFLfw",
+  authDomain: "taclar-52e72.firebaseapp.com",
+  projectId: "taclar-52e72",
+  storageBucket: "taclar-52e72.firebasestorage.app",
+  messagingSenderId: "501812718028",
+  appId: "1:501812718028:web:45842bcde3db9049ec9569"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+</script>
+
 <script>
 var currentRows=[];
 function statusFr(s){if(s==='service')return 'En service';if(s==='incident')return 'Incident';return 'Terminé'}
@@ -61,7 +77,36 @@ function pill(s){if(s==='service')return '<span class="statuspill pillgreen">En 
 function getHidden(){try{return JSON.parse(localStorage.getItem('taclar_dispatch_hidden')||'[]')}catch(e){return []}}
 function setHidden(h){localStorage.setItem('taclar_dispatch_hidden',JSON.stringify(h))}
 function rowId(r){return [r.source||'',r.plate||'---',r.driver||'---',r.route||'---',r.start||'',r.end||'',r.updated||''].join('|')}
+var cloudLiveRows=[];
+function startFirebaseDispatch(){
+  try{
+    db.collection("groupage_live").onSnapshot(function(snapshot){
+      cloudLiveRows=[];
+      snapshot.forEach(function(doc){cloudLiveRows.push(doc.data())});
+      render();
+    });
+  }catch(e){console.log("firebase dispatch error",e)}
+}
 function getRows(){
+  if(cloudLiveRows && cloudLiveRows.length){
+    return cloudLiveRows.map(function(x,i){
+      return {
+        source:"cloud-"+(x.sessionId||i),
+        plate:x.plate||"---",
+        driver:x.driver||"---",
+        route:x.route||"---",
+        status:x.status==="closed"?"closed":(x.status||"service"),
+        onboard:Number(x.onboard||0),
+        free:x.free==null?4:Number(x.free),
+        start:x.start||"--:--",
+        end:x.end||"--:--",
+        duration:x.duration||(x.status==="closed"?"--":"En cours"),
+        last:x.last||"",
+        incident:x.incident||null,
+        updated:x.updatedAtLocal||""
+      }
+    });
+  }
   var rows=[];
   try{
     var live=JSON.parse(localStorage.getItem('taclar_live')||'null');
@@ -110,6 +155,6 @@ function showDetail(i){
 }
 function closeDetail(){document.getElementById('detailModal').style.display='none'}
 function clearDispatch(){if(confirm('Effacer le dernier statut dispatch et les lignes masquées ?')){localStorage.removeItem('taclar_live');localStorage.removeItem('taclar_dispatch_hidden');render();}}
-render();setInterval(render,3000);
+render();startFirebaseDispatch();setInterval(render,3000);
 </script>
 </body></html>
