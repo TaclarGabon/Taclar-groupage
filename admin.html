@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.1.1</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.1.2</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -27,10 +27,16 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 .axisRow{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px}
 @media(max-width:700px){.axisGrid,.axisRow{grid-template-columns:1fr}}
 
+
+.axisActions{display:flex;gap:6px;flex-wrap:wrap}
+.axisActions button{min-height:34px;font-size:12px;padding:6px 8px}
+.editBox{display:none;background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.30);border-radius:14px;padding:10px;margin-top:10px}
+.editGrid{display:grid;grid-template-columns:1fr 1fr 100px;gap:8px}
+@media(max-width:700px){.editGrid{grid-template-columns:1fr}}
 </style></head>
 <body>
 <div class="app">
-<div class="badge">ADMIN V12.1.1</div>
+<div class="badge">ADMIN V12.1.2</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 
@@ -48,15 +54,28 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 
 
 
+
 <div class="card">
 <h2>Gestion des axes</h2>
-<p class="muted">Ajouter un axe propre : départ + arrivée. Le format sera créé automatiquement.</p>
+<p class="muted">Ajoute un départ et une arrivée. TACLAR crée automatiquement l’aller et le retour.</p>
 
 <div class="axisGrid">
 <input id="axisDepart" placeholder="Départ ex : Okala" style="letter-spacing:0;text-align:left">
 <input id="axisArrivee" placeholder="Arrivée ex : Aéroport" style="letter-spacing:0;text-align:left">
 <input id="axisMin" placeholder="Min. ex : 200" type="number" style="letter-spacing:0;text-align:left">
-<button onclick="addAxis()">Ajouter axe</button>
+<button onclick="addAxis()">Ajouter aller-retour</button>
+</div>
+
+<div class="editBox" id="editAxisBox">
+<h3>Modifier axe</h3>
+<div class="editGrid">
+<input id="editDepart" placeholder="Départ" style="letter-spacing:0;text-align:left">
+<input id="editArrivee" placeholder="Arrivée" style="letter-spacing:0;text-align:left">
+<input id="editMin" placeholder="Min." type="number" style="letter-spacing:0;text-align:left">
+</div>
+<br>
+<button onclick="saveAxisEdit()">Enregistrer</button>
+<button class="btn-dark" onclick="cancelAxisEdit()">Annuler</button>
 </div>
 
 <div class="axisList" id="axisList"></div>
@@ -181,6 +200,9 @@ function clearData(){
 }
 
 
+
+var editingAxisId=null;
+
 function safeText(s){
   return String(s||"").replace(/[&<>"']/g,function(c){
     return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
@@ -189,6 +211,25 @@ function safeText(s){
 function normalizePlace(s){
   s=String(s||"").trim().replace(/\s+/g," ");
   if(!s)return "";
+  var special={
+    "centre ville":"Centre-ville",
+    "centre-ville":"Centre-ville",
+    "aeroport":"Aéroport",
+    "aéroport":"Aéroport",
+    "nzeng ayong":"Nzeng-Ayong",
+    "nzeng-ayong":"Nzeng-Ayong",
+    "okala":"Okala",
+    "akanda":"Akanda",
+    "owendo":"Owendo",
+    "charbonnages":"Charbonnages",
+    "charbonnage":"Charbonnages",
+    "louis":"Louis",
+    "mikongo":"Mikongo",
+    "mikolongo":"Mikolongo"
+  };
+  var key=s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  key=key.replace(/-/g," ").replace(/\s+/g," ").trim();
+  if(special[key])return special[key];
   return s.split(" ").map(function(part){
     if(part.indexOf("-")>-1){
       return part.split("-").map(function(p){
@@ -201,14 +242,24 @@ function normalizePlace(s){
 function buildAxisName(depart,arrivee){
   return normalizePlace(depart)+" → "+normalizePlace(arrivee);
 }
+function axisSort(a,b){
+  var ao=Number((a.data.order==null)?9999:a.data.order);
+  var bo=Number((b.data.order==null)?9999:b.data.order);
+  if(ao!==bo)return ao-bo;
+  return (a.data.name||"").localeCompare(b.data.name||"");
+}
 function seedDefaultAxes(){
   var defaults=[
-    {depart:"Okala",arrivee:"Aéroport",name:"Okala → Aéroport",min:200,active:true},
-    {depart:"Okala",arrivee:"Centre-ville",name:"Okala → Centre-ville",min:200,active:true},
-    {depart:"Akanda",arrivee:"Centre-ville",name:"Akanda → Centre-ville",min:200,active:true},
-    {depart:"Owendo",arrivee:"Centre-ville",name:"Owendo → Centre-ville",min:200,active:true},
-    {depart:"Charbonnages",arrivee:"Louis",name:"Charbonnages → Louis",min:200,active:true},
-    {depart:"Nzeng-Ayong",arrivee:"Aéroport",name:"Nzeng-Ayong → Aéroport",min:200,active:true}
+    {depart:"Akanda",arrivee:"Centre-ville",name:"Akanda → Centre-ville",min:200,active:true,order:10},
+    {depart:"Centre-ville",arrivee:"Akanda",name:"Centre-ville → Akanda",min:200,active:true,order:11},
+    {depart:"Okala",arrivee:"Aéroport",name:"Okala → Aéroport",min:200,active:true,order:20},
+    {depart:"Aéroport",arrivee:"Okala",name:"Aéroport → Okala",min:200,active:true,order:21},
+    {depart:"Okala",arrivee:"Centre-ville",name:"Okala → Centre-ville",min:200,active:true,order:30},
+    {depart:"Centre-ville",arrivee:"Okala",name:"Centre-ville → Okala",min:200,active:true,order:31},
+    {depart:"Charbonnages",arrivee:"Louis",name:"Charbonnages → Louis",min:200,active:true,order:40},
+    {depart:"Louis",arrivee:"Charbonnages",name:"Louis → Charbonnages",min:200,active:true,order:41},
+    {depart:"Nzeng-Ayong",arrivee:"Aéroport",name:"Nzeng-Ayong → Aéroport",min:200,active:true,order:50},
+    {depart:"Aéroport",arrivee:"Nzeng-Ayong",name:"Aéroport → Nzeng-Ayong",min:200,active:true,order:51}
   ];
   db.collection("groupage_axes").get().then(function(snap){
     if(!snap.empty)return;
@@ -220,29 +271,59 @@ function seedDefaultAxes(){
 function startAxesAdmin(){
   try{
     seedDefaultAxes();
-    db.collection("groupage_axes").orderBy("name").onSnapshot(function(snapshot){
+    db.collection("groupage_axes").onSnapshot(function(snapshot){
       var list=document.getElementById("axisList");
       if(!list)return;
       list.innerHTML="";
-      snapshot.forEach(function(doc){
-        var x=doc.data();
+      var rows=[];
+      snapshot.forEach(function(doc){rows.push({id:doc.id,data:doc.data()})});
+      rows.sort(axisSort);
+      rows.forEach(function(item,idx){
+        var x=item.data;
         var row=document.createElement("div");
         row.className="axisRow";
         var b1=document.createElement("div");
-        b1.innerHTML="<b>"+safeText(x.name||"---")+"</b><br><span class='muted'>Départ : "+safeText(x.depart||"---")+" · Arrivée : "+safeText(x.arrivee||"---")+"<br>Min : "+(x.min||200)+" FCFA · "+(x.active===false?"Inactif":"Actif")+"</span>";
-        var b2=document.createElement("button");
-        b2.className="btn-dark";
-        b2.textContent=x.active===false?"Activer":"Désactiver";
-        b2.onclick=function(){toggleAxis(doc.id, x.active===false)};
-        var b3=document.createElement("button");
-        b3.className="btn-red";
-        b3.textContent="Supprimer";
-        b3.onclick=function(){deleteAxis(doc.id)};
-        row.appendChild(b1); row.appendChild(b2); row.appendChild(b3);
+        b1.innerHTML="<b>"+safeText(x.name||"---")+"</b><br><span class='muted'>Départ : "+safeText(x.depart||"---")+" · Arrivée : "+safeText(x.arrivee||"---")+"<br>Min : "+(x.min||200)+" FCFA · "+(x.active===false?"Inactif":"Actif")+" · Ordre : "+(x.order==null?9999:x.order)+"</span>";
+        var actions=document.createElement("div");
+        actions.className="axisActions";
+
+        var up=document.createElement("button");
+        up.className="btn-dark"; up.textContent="▲";
+        up.onclick=function(){moveAxis(item.id, -1, x.order, rows)};
+
+        var down=document.createElement("button");
+        down.className="btn-dark"; down.textContent="▼";
+        down.onclick=function(){moveAxis(item.id, 1, x.order, rows)};
+
+        var edit=document.createElement("button");
+        edit.className="btn-dark"; edit.textContent="Modifier";
+        edit.onclick=function(){openAxisEdit(item.id,x)};
+
+        var toggle=document.createElement("button");
+        toggle.className="btn-dark";
+        toggle.textContent=x.active===false?"Activer":"Désactiver";
+        toggle.onclick=function(){toggleAxis(item.id, x.active===false)};
+
+        var del=document.createElement("button");
+        del.className="btn-red"; del.textContent="Supprimer";
+        del.onclick=function(){deleteAxis(item.id)};
+
+        actions.appendChild(up);actions.appendChild(down);actions.appendChild(edit);actions.appendChild(toggle);actions.appendChild(del);
+        row.appendChild(b1); row.appendChild(actions);
         list.appendChild(row);
       });
     });
   }catch(e){console.log("axes admin error",e)}
+}
+function nextOrder(){
+  return db.collection("groupage_axes").get().then(function(snap){
+    var max=0;
+    snap.forEach(function(doc){
+      var o=Number(doc.data().order||0);
+      if(o>max)max=o;
+    });
+    return max+10;
+  });
 }
 function addAxis(){
   var depart=document.getElementById("axisDepart").value.trim();
@@ -252,19 +333,59 @@ function addAxis(){
   if(!arrivee)return alert("Écrire l’arrivée.");
   var cleanDepart=normalizePlace(depart);
   var cleanArrivee=normalizePlace(arrivee);
-  var name=buildAxisName(cleanDepart,cleanArrivee);
-  db.collection("groupage_axes").add({
-    depart:cleanDepart,
-    arrivee:cleanArrivee,
-    name:name,
-    min:min,
-    active:true,
-    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  if(cleanDepart===cleanArrivee)return alert("Départ et arrivée doivent être différents.");
+  nextOrder().then(function(order){
+    var go={depart:cleanDepart,arrivee:cleanArrivee,name:buildAxisName(cleanDepart,cleanArrivee),min:min,active:true,order:order,createdAt:firebase.firestore.FieldValue.serverTimestamp()};
+    var back={depart:cleanArrivee,arrivee:cleanDepart,name:buildAxisName(cleanArrivee,cleanDepart),min:min,active:true,order:order+1,createdAt:firebase.firestore.FieldValue.serverTimestamp()};
+    var batch=db.batch();
+    var ref1=db.collection("groupage_axes").doc();
+    var ref2=db.collection("groupage_axes").doc();
+    batch.set(ref1,go);batch.set(ref2,back);
+    return batch.commit();
   }).then(function(){
     document.getElementById("axisDepart").value="";
     document.getElementById("axisArrivee").value="";
     document.getElementById("axisMin").value="";
   });
+}
+function openAxisEdit(id,x){
+  editingAxisId=id;
+  document.getElementById("editDepart").value=x.depart||"";
+  document.getElementById("editArrivee").value=x.arrivee||"";
+  document.getElementById("editMin").value=x.min||200;
+  document.getElementById("editAxisBox").style.display="block";
+  document.getElementById("editAxisBox").scrollIntoView({behavior:"smooth",block:"center"});
+}
+function cancelAxisEdit(){
+  editingAxisId=null;
+  document.getElementById("editAxisBox").style.display="none";
+}
+function saveAxisEdit(){
+  if(!editingAxisId)return;
+  var depart=normalizePlace(document.getElementById("editDepart").value);
+  var arrivee=normalizePlace(document.getElementById("editArrivee").value);
+  var min=Number(document.getElementById("editMin").value||200);
+  if(!depart||!arrivee)return alert("Départ et arrivée obligatoires.");
+  db.collection("groupage_axes").doc(editingAxisId).update({
+    depart:depart,
+    arrivee:arrivee,
+    name:buildAxisName(depart,arrivee),
+    min:min,
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(cancelAxisEdit);
+}
+function moveAxis(id,direction,currentOrder,rows){
+  var currentIndex=rows.findIndex(function(r){return r.id===id});
+  var targetIndex=currentIndex+direction;
+  if(targetIndex<0||targetIndex>=rows.length)return;
+  var current=rows[currentIndex];
+  var target=rows[targetIndex];
+  var currentO=Number(current.data.order==null?9999:current.data.order);
+  var targetO=Number(target.data.order==null?9999:target.data.order);
+  var batch=db.batch();
+  batch.update(db.collection("groupage_axes").doc(current.id),{order:targetO,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  batch.update(db.collection("groupage_axes").doc(target.id),{order:currentO,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  batch.commit();
 }
 function toggleAxis(id,state){
   db.collection("groupage_axes").doc(id).update({active:state,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
