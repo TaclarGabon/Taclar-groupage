@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.2.13</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.2.14</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -49,10 +49,14 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 .driverEditBox{display:none;background:rgba(94,234,212,.08);border:1px solid rgba(94,234,212,.30);border-radius:14px;padding:10px;margin-top:10px}
 @media(max-width:800px){.driverGrid,.driverRow{grid-template-columns:1fr}.driverActions{justify-content:flex-start}}
 
+
+.adminSection{width:100%;box-sizing:border-box;margin-top:14px}
+.adminSection.card{width:100%;max-width:none}
+
 </style></head>
 <body>
 <div class="app">
-<div class="badge">ADMIN V12.2.13</div>
+<div class="badge">ADMIN V12.2.14</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 
@@ -71,37 +75,31 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 
 
 
-<div class="card">
-<div class="accordionHead" onclick="toggleAccordion('axesBody','axesIcon')"><h2>Gestion des axes</h2><span class="accordionIcon" id="axesIcon">▶</span></div>
-<div class="accordionBody" id="axesBody">
-<p class="muted">Ajoute un départ et une arrivée. TACLAR crée automatiquement l’aller et le retour.</p>
 
-<div class="axisGrid">
-<input id="axisDepart" placeholder="Départ ex : Okala" style="letter-spacing:0;text-align:left">
-<input id="axisArrivee" placeholder="Arrivée ex : Aéroport" style="letter-spacing:0;text-align:left">
-<input id="axisMin" placeholder="Min. ex : 200" type="number" style="letter-spacing:0;text-align:left">
-<button onclick="addAxis()">Ajouter aller-retour</button>
-</div>
-
-<div class="editBox" id="editAxisBox">
-<h3>Modifier axe</h3>
-<div class="editGrid">
-<input id="editDepart" placeholder="Départ" style="letter-spacing:0;text-align:left">
-<input id="editArrivee" placeholder="Arrivée" style="letter-spacing:0;text-align:left">
-<input id="editMin" placeholder="Min." type="number" style="letter-spacing:0;text-align:left">
-</div>
-<br>
-<button onclick="saveAxisEdit()">Enregistrer</button>
-<button class="btn-dark" onclick="cancelAxisEdit()">Annuler</button>
-</div>
-
-<div class="axisList" id="axisList"></div>
-</div>
-
+<div class="card adminSection" id="sectionReport">
+<div class="accordionHead" onclick="toggleAccordion('reportBody','reportIcon')"><h2>Rapport des sessions</h2><span class="accordionIcon" id="reportIcon">▼</span></div>
+<div class="accordionBody open" id="reportBody" class="open">
+<table>
+<thead><tr>
+<th>Date</th><th>Début</th><th>Fin</th><th>Durée</th><th>Chauffeur</th><th>Plaque</th><th>Pass.</th><th>Cash</th><th>Airtel</th><th>Montant</th><th>Comm.</th><th>Net</th><th>Inc.</th><th>Action</th>
+</tr></thead>
+<tbody id="rows"></tbody>
+</table>
 </div>
 </div>
 
-<div class="card">
+<div class="modal-bg" id="detailModal"><div class="modal">
+<h2>Détail session</h2>
+<div id="detailContent"></div>
+<button class="btn-dark" onclick="closeDetail()">Fermer</button>
+</div></div>
+
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+</div>
+
+<div class="card adminSection" id="sectionDrivers">
 <div class="accordionHead" onclick="toggleAccordion('driversBody','driversIcon')"><h2>Gestion des chauffeurs</h2><span class="accordionIcon" id="driversIcon">▶</span></div>
 <div class="accordionBody" id="driversBody">
 <p class="muted"><b>Note :</b> Chauffeur reste en saisie manuelle stable. La vérification PIN Firebase sera reprise plus tard avec la connexion sécurisée.</p>
@@ -132,28 +130,38 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </div>
 </div>
 
-<div class="card">
-<div class="accordionHead" onclick="toggleAccordion('reportBody','reportIcon')"><h2>Rapport des sessions</h2><span class="accordionIcon" id="reportIcon">▼</span></div>
-<div class="accordionBody open" id="reportBody">
-<table>
-<thead><tr>
-<th>Date</th><th>Début</th><th>Fin</th><th>Durée</th><th>Chauffeur</th><th>Plaque</th><th>Pass.</th><th>Cash</th><th>Airtel</th><th>Montant</th><th>Comm.</th><th>Net</th><th>Inc.</th><th>Action</th>
-</tr></thead>
-<tbody id="rows"></tbody>
-</table>
+
+<div class="card adminSection" id="sectionAxes">
+<div class="accordionHead" onclick="toggleAccordion('axesBody','axesIcon')"><h2>Gestion des axes</h2><span class="accordionIcon" id="axesIcon">▶</span></div>
+<div class="accordionBody" id="axesBody">
+<p class="muted">Ajoute un départ et une arrivée. TACLAR crée automatiquement l’aller et le retour.</p>
+
+<div class="axisGrid">
+<input id="axisDepart" placeholder="Départ ex : Okala" style="letter-spacing:0;text-align:left">
+<input id="axisArrivee" placeholder="Arrivée ex : Aéroport" style="letter-spacing:0;text-align:left">
+<input id="axisMin" placeholder="Min. ex : 200" type="number" style="letter-spacing:0;text-align:left">
+<button onclick="addAxis()">Ajouter aller-retour</button>
+</div>
+
+<div class="editBox" id="editAxisBox">
+<h3>Modifier axe</h3>
+<div class="editGrid">
+<input id="editDepart" placeholder="Départ" style="letter-spacing:0;text-align:left">
+<input id="editArrivee" placeholder="Arrivée" style="letter-spacing:0;text-align:left">
+<input id="editMin" placeholder="Min." type="number" style="letter-spacing:0;text-align:left">
+</div>
+<br>
+<button onclick="saveAxisEdit()">Enregistrer</button>
+<button class="btn-dark" onclick="cancelAxisEdit()">Annuler</button>
+</div>
+
+<div class="axisList" id="axisList"></div>
+</div>
+
 </div>
 </div>
 
-<div class="modal-bg" id="detailModal"><div class="modal">
-<h2>Détail session</h2>
-<div id="detailContent"></div>
-<button class="btn-dark" onclick="closeDetail()">Fermer</button>
-</div></div>
 
-
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-</div>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyC_JNVVGrd2whXRGfHuOlShhmZfaLQFLfw",
