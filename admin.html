@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.1</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -21,10 +21,16 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10;padding:18px;align-items:center;justify-content:center}
 .modal{width:100%;max-width:460px;background:#102629;border-radius:24px;padding:20px;border:1px solid rgba(255,255,255,.15);max-height:88vh;overflow:auto}
 @media(max-width:700px){.app{max-width:430px;padding:10px}.summary{grid-template-columns:1fr 1fr}table{font-size:11px}th,td{padding:6px}}
+
+.axisGrid{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;margin-top:10px}
+.axisList{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.axisRow{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px}
+@media(max-width:700px){.axisGrid,.axisRow{grid-template-columns:1fr}}
+
 </style></head>
 <body>
 <div class="app">
-<div class="badge">ADMIN V12</div>
+<div class="badge">ADMIN V12.1</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 
@@ -38,6 +44,18 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 <div class="box"><small>Passagers</small><strong id="pCount">0</strong></div>
 <div class="box"><small>Montant</small><strong id="tSum">0 FCFA</strong></div>
 <div class="box"><small>Comm. TACLAR</small><strong id="cSum">0 FCFA</strong></div>
+</div>
+
+
+<div class="card">
+<h2>Gestion des axes</h2>
+<p class="muted">Ces axes apparaîtront automatiquement dans l’interface Chauffeur.</p>
+<div class="axisGrid">
+<input id="axisName" placeholder="Ex : Okala → Aéroport" style="letter-spacing:0;text-align:left">
+<input id="axisMin" placeholder="Min. ex : 200" type="number" style="letter-spacing:0;text-align:left">
+<button onclick="addAxis()">Ajouter axe</button>
+</div>
+<div class="axisList" id="axisList"></div>
 </div>
 
 <div class="card">
@@ -157,6 +175,71 @@ function deleteSession(i){
 function clearData(){
   if(confirm('Effacer tous les rapports test ?')){localStorage.removeItem('taclar_sessions');render();}
 }
-render();startFirebaseAdmin();
+
+function safeText(s){
+  return String(s||"").replace(/[&<>"']/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+  });
+}
+function seedDefaultAxes(){
+  var defaults=[
+    {name:"Okala → Aéroport",min:200,active:true},
+    {name:"Okala → Centre-ville",min:200,active:true},
+    {name:"Akanda → Centre-ville",min:200,active:true},
+    {name:"Owendo → Centre-ville",min:200,active:true},
+    {name:"Charbonnages → Louis",min:200,active:true},
+    {name:"Nzeng-Ayong → Aéroport",min:200,active:true}
+  ];
+  db.collection("groupage_axes").get().then(function(snap){
+    if(!snap.empty)return;
+    defaults.forEach(function(x){
+      db.collection("groupage_axes").add(Object.assign({},x,{createdAt:firebase.firestore.FieldValue.serverTimestamp()}));
+    });
+  });
+}
+function startAxesAdmin(){
+  try{
+    seedDefaultAxes();
+    db.collection("groupage_axes").orderBy("name").onSnapshot(function(snapshot){
+      var list=document.getElementById("axisList");
+      if(!list)return;
+      list.innerHTML="";
+      snapshot.forEach(function(doc){
+        var x=doc.data();
+        var row=document.createElement("div");
+        row.className="axisRow";
+        var b1=document.createElement("div");
+        b1.innerHTML="<b>"+safeText(x.name||"---")+"</b><br><span class='muted'>Min : "+(x.min||200)+" FCFA · "+(x.active===false?"Inactif":"Actif")+"</span>";
+        var b2=document.createElement("button");
+        b2.className="btn-dark";
+        b2.textContent=x.active===false?"Activer":"Désactiver";
+        b2.onclick=function(){toggleAxis(doc.id, x.active===false)};
+        var b3=document.createElement("button");
+        b3.className="btn-red";
+        b3.textContent="Supprimer";
+        b3.onclick=function(){deleteAxis(doc.id)};
+        row.appendChild(b1); row.appendChild(b2); row.appendChild(b3);
+        list.appendChild(row);
+      });
+    });
+  }catch(e){console.log("axes admin error",e)}
+}
+function addAxis(){
+  var name=document.getElementById("axisName").value.trim();
+  var min=Number(document.getElementById("axisMin").value||200);
+  if(!name)return alert("Écrire le nom de l’axe.");
+  db.collection("groupage_axes").add({name:name,min:min,active:true,createdAt:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){
+    document.getElementById("axisName").value="";
+    document.getElementById("axisMin").value="";
+  });
+}
+function toggleAxis(id,state){
+  db.collection("groupage_axes").doc(id).update({active:state,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+}
+function deleteAxis(id){
+  if(confirm("Supprimer cet axe ?")) db.collection("groupage_axes").doc(id).delete();
+}
+
+render();startFirebaseAdmin();startAxesAdmin();
 </script>
 </body></html>
