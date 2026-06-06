@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V12.2.2</title><style>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V12.2.3</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:430px;margin:auto;padding:10px;min-height:100vh}
@@ -37,8 +37,8 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 .resumeBox button{margin-top:8px}
 </style></head>
 <body><div class="app">
-<div class="badge">V12.2.2</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div><div class="resumeBox" id="resumeBox"><b>Session active détectée</b><div id="resumeText"></div><button id="resumeBtn">Reprendre session</button><button class="btn-red" id="discardResumeBtn">Nouvelle session</button></div>
-<div class="card"><div class="grid2"><div><label>Axe</label><select id="route"><option>Okala → Aéroport</option><option>Akanda → Centre-ville</option><option>Nzeng-Ayong → Aéroport</option><option>Charbonnages → Louis</option><option>Owendo → Centre-ville</option><option>Sans axe fixe</option></select></div><div><label>Type véhicule</label><select id="vehicleType"><option value="4">Corolla - 4 places</option></select></div></div><br><label>Plaque véhicule</label><input id="plateInput" placeholder="Ex : LBV-1234"><br><br><label>Nom chauffeur</label><select id="driverSelect"><option value="">Chargement chauffeurs...</option></select><input id="driverNameInput" placeholder="Ex : Paul" style="display:none"><br><br><label>PIN chauffeur</label><input id="driverPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="1234"><br><br><button id="startBtn">Démarrer la session</button></div>
+<div class="badge">V12.2.3</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div><div class="resumeBox" id="resumeBox"><b>Session active détectée</b><div id="resumeText"></div><button id="resumeBtn">Reprendre session</button><button class="btn-red" id="discardResumeBtn">Nouvelle session</button></div>
+<div class="card"><div class="grid2"><div><label>Axe</label><select id="route"><option>Okala → Aéroport</option><option>Akanda → Centre-ville</option><option>Nzeng-Ayong → Aéroport</option><option>Charbonnages → Louis</option><option>Owendo → Centre-ville</option><option>Sans axe fixe</option></select></div><div><label>Type véhicule</label><select id="vehicleType"><option value="4">Corolla - 4 places</option></select></div></div><br><label>Plaque véhicule</label><input id="plateInput" placeholder="Ex : LBV-1234"><br><br><label>Nom chauffeur</label><input id="driverNameInput" placeholder="Ex : Paul"><br><br><label>PIN chauffeur</label><input id="driverPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="1234"><br><br><button id="startBtn">Démarrer la session</button></div>
 <div class="summary"><div class="box"><small>À bord</small><strong><span id="onboard">0</span>/4</strong></div><div class="box"><small>Places libres</small><strong class="green" id="freeSeats">4</strong></div></div>
 <div class="card"><label>Plan des sièges</label><div class="seatMap"><div class="frontRow"><div class="driverSeat"><div><div style="font-size:12px">CHAUFFEUR</div><div id="driverNameDisplay" style="font-size:19px;font-weight:900">---</div></div></div><button class="seatBtn seatFree" id="seat-SP" data-seat="SP"><span class="code">SP</span><span class="amount">Libre</span></button></div><div class="backRow"><button class="seatBtn seatFree" id="seat-SG"><span class="code">SG</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SM"><span class="code">SM</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SD"><span class="code">SD</span><span class="amount">Libre</span></button></div></div>
 <div id="farePanel" class="fareGrid"><button class="fare" data-amount="200">200</button><button class="fare" data-amount="500">500</button><button class="fare" data-amount="1000">1000</button><button class="fare" data-amount="1500">1500</button><button class="fare" data-amount="2000">2000</button><button class="fare" data-amount="2500">2500</button><button class="fare" data-amount="3000">3000</button><button class="fare" data-amount="3500">3500</button><button class="fare" data-amount="4000">4000</button><button class="fare btn-yellow" data-amount="5000">5000</button></div>
@@ -279,7 +279,7 @@ cloudClearCurrentLive();
     seatList.forEach(s=>{seats[s].amount=0;seats[s].occupied=false});
     publicActions=[];privateActions=[];incidentActions=[];
     el("plateInput").disabled=false;el("driverNameInput").disabled=false;el("driverPinInput").disabled=false;el("route").disabled=false;el("vehicleType").disabled=false;el("startBtn").disabled=false;
-    el("plateInput").value="";el("driverNameInput").value="";if(el("driverSelect"))el("driverSelect").value="";el("driverPinInput").value="";el("driverNameDisplay").textContent="---";
+    el("plateInput").value="";el("driverNameInput").value="";el("driverPinInput").value="";el("driverNameDisplay").textContent="---";
     el("status").textContent="Choisir un axe puis démarrer";
     hidePanels();render();
   }
@@ -299,85 +299,7 @@ async function forceNewSession(){
   location.reload();
 }
 
-
-
-
-var driversList=[];
-
-function startDriversListener(){
-  var sel=document.getElementById("driverSelect");
-  if(sel)sel.innerHTML='<option value="">Chargement chauffeurs...</option>';
-  try{
-    db.collection("groupage_drivers").onSnapshot(function(snapshot){
-      driversList=[];
-      snapshot.forEach(function(doc){
-        var d=doc.data();
-        d.id=doc.id;
-        if(d.active!==false)driversList.push(d);
-      });
-      driversList.sort(function(a,b){return String(a.name||"").localeCompare(String(b.name||""))});
-      fillDriverSelect();
-    },function(error){
-      console.log("drivers snapshot error",error);
-      if(sel)sel.innerHTML='<option value="">Erreur chargement chauffeurs</option>';
-    });
-  }catch(e){
-    console.log("drivers listener error",e);
-    if(sel)sel.innerHTML='<option value="">Erreur chargement chauffeurs</option>';
-  }
-}
-function fillDriverSelect(){
-  var sel=document.getElementById("driverSelect");
-  if(!sel)return;
-  var current=sel.value;
-  sel.innerHTML="";
-  if(driversList.length===0){
-    sel.innerHTML='<option value="">Aucun chauffeur actif</option>';
-    return;
-  }
-  var first=document.createElement("option");
-  first.value="";
-  first.textContent="Choisir chauffeur";
-  sel.appendChild(first);
-  driversList.forEach(function(d){
-    var opt=document.createElement("option");
-    opt.value=d.id;
-    opt.textContent=(d.name||"---")+(d.phone?" · "+d.phone:"");
-    sel.appendChild(opt);
-  });
-  if(current)sel.value=current;
-}
-function selectedDriver(){
-  var sel=document.getElementById("driverSelect");
-  if(!sel||!sel.value)return null;
-  return driversList.find(function(d){return d.id===sel.value})||null;
-}
-function applySelectedDriver(){
-  var d=selectedDriver();
-  if(!d)return;
-  el("driverNameInput").value=d.name||"";
-  if(d.plate && !el("plateInput").value.trim()){
-    el("plateInput").value=String(d.plate||"").toUpperCase();
-  }
-}
-async function validateDriverAccess(){
-  var d=selectedDriver();
-  if(!d){
-    alert("Choisis le chauffeur dans la liste.");
-    return false;
-  }
-  var entered=String(el("driverPinInput").value||"").trim();
-  if(String(d.pin||"").trim()!==entered){
-    alert("PIN incorrect.");
-    return false;
-  }
-  el("driverNameInput").value=d.name||"";
-  return true;
-}
-
-
-function startSession(){
-  if(!(await validateDriverAccess()))return;var n=el("driverNameInput").value.trim(),p=el("driverPinInput").value.trim();var plate=el("plateInput").value.trim();if(!plate)return alert("Entre la plaque du véhicule.");if(!n)return alert("Entre le nom du chauffeur."); if(!p)return alert("Entre le PIN chauffeur.");driverName=n;driverPin=p;plateNumber=plate;active=true;sessionId="S"+Date.now();startTime=nowText();publicActions=[];privateActions=[];incidentActions=[];currentIncident=null;seatList.forEach(s=>{seats[s].amount=0;seats[s].occupied=false});el("driverNameDisplay").textContent=driverName;el("plateInput").disabled=true;el("driverNameInput").disabled=true;el("driverPinInput").disabled=true;el("route").disabled=true;el("vehicleType").disabled=true;el("startBtn").disabled=true;el("status").textContent="Session active - "+driverName;render()}
+function startSession(){var n=el("driverNameInput").value.trim(),p=el("driverPinInput").value.trim();var plate=el("plateInput").value.trim();if(!plate)return alert("Entre la plaque du véhicule.");if(!n)return alert("Entre le nom du chauffeur."); if(!p)return alert("Entre le PIN chauffeur.");driverName=n;driverPin=p;plateNumber=plate;active=true;sessionId="S"+Date.now();startTime=nowText();publicActions=[];privateActions=[];incidentActions=[];currentIncident=null;seatList.forEach(s=>{seats[s].amount=0;seats[s].occupied=false});el("driverNameDisplay").textContent=driverName;el("plateInput").disabled=true;el("driverNameInput").disabled=true;el("driverPinInput").disabled=true;el("route").disabled=true;el("vehicleType").disabled=true;el("startBtn").disabled=true;el("status").textContent="Session active - "+driverName;render()}
 function chooseSeat(c){if(!active)return alert("Démarre d'abord la session.");selectedSeat=c;hidePanels();if(seats[c].occupied){el("seatPanelTitle").textContent=c+" occupé";el("seatPanel").style.display="block"}else{el("farePanel").style.display="grid"}}
 function addPassenger(a){
 pendingAmount=a;
@@ -536,8 +458,6 @@ document.querySelectorAll(".zeroReason").forEach(function(btn){
 });
 el("zeroCloseCancel").onclick=function(){el("zeroCloseModal").style.display="none"};
 
-if(el("driverSelect"))el("driverSelect").onchange=applySelectedDriver;
-startDriversListener();
 showResumeIfAny();
 
 document.querySelectorAll(".numKey").forEach(b=>b.onclick=()=>{cashInput+=b.dataset.n;cashInput=cashInput.replace(/^0+/,"");if(cashInput==="")cashInput="0";el("cashTyped").textContent=money(Number(cashInput))});
