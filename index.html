@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V11.7</title><style>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V12</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:430px;margin:auto;padding:10px;min-height:100vh}
@@ -37,7 +37,7 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 .resumeBox button{margin-top:8px}
 </style></head>
 <body><div class="app">
-<div class="badge">V11.7</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div><div class="resumeBox" id="resumeBox"><b>Session active détectée</b><div id="resumeText"></div><button id="resumeBtn">Reprendre session</button><button class="btn-red" id="discardResumeBtn">Nouvelle session</button></div>
+<div class="badge">V12</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div><div class="resumeBox" id="resumeBox"><b>Session active détectée</b><div id="resumeText"></div><button id="resumeBtn">Reprendre session</button><button class="btn-red" id="discardResumeBtn">Nouvelle session</button></div>
 <div class="card"><div class="grid2"><div><label>Axe</label><select id="route"><option>Okala → Aéroport</option><option>Akanda → Centre-ville</option><option>Nzeng-Ayong → Aéroport</option><option>Charbonnages → Louis</option><option>Owendo → Centre-ville</option><option>Sans axe fixe</option></select></div><div><label>Type véhicule</label><select id="vehicleType"><option value="4">Corolla - 4 places</option></select></div></div><br><label>Plaque véhicule</label><input id="plateInput" placeholder="Ex : LBV-1234"><br><br><label>Nom chauffeur</label><input id="driverNameInput" placeholder="Ex : Paul"><br><br><label>PIN chauffeur</label><input id="driverPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="1234"><br><br><button id="startBtn">Démarrer la session</button></div>
 <div class="summary"><div class="box"><small>À bord</small><strong><span id="onboard">0</span>/4</strong></div><div class="box"><small>Places libres</small><strong class="green" id="freeSeats">4</strong></div></div>
 <div class="card"><label>Plan des sièges</label><div class="seatMap"><div class="frontRow"><div class="driverSeat"><div><div style="font-size:12px">CHAUFFEUR</div><div id="driverNameDisplay" style="font-size:19px;font-weight:900">---</div></div></div><button class="seatBtn seatFree" id="seat-SP" data-seat="SP"><span class="code">SP</span><span class="amount">Libre</span></button></div><div class="backRow"><button class="seatBtn seatFree" id="seat-SG"><span class="code">SG</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SM"><span class="code">SM</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SD"><span class="code">SD</span><span class="amount">Libre</span></button></div></div>
@@ -105,6 +105,22 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 <div class="modal-bg" id="incidentModal"><div class="modal"><h2>Incident</h2><p class="muted">Choisir la raison</p><div id="incidentChoices"></div><button class="btn-dark" id="incidentCancel">Annuler</button></div></div>
 <div class="modal-bg" id="pinModal"><div class="modal"><h2>Info</h2><p class="muted">PIN chauffeur</p><input id="pinInput" type="password" inputmode="numeric" maxlength="4"><button id="pinSubmit">Valider</button><button class="btn-dark" id="pinCancel">Annuler</button></div></div>
 <div class="modal-bg" id="infoModal"><div class="modal"><h2>Info du jour</h2><div class="grid2"><div class="box"><small>Chauffeur</small><strong id="infoDriver">---</strong></div><div class="box"><small>Passagers</small><strong id="infoPassengers">0</strong></div><div class="box"><small>Montant</small><strong id="infoTotal">0</strong></div><div class="box"><small>Début</small><strong id="infoStart">--:--</strong></div></div><br><label>Historique détaillé</label><div class="list" id="privateHistory"></div><br><button class="btn-dark" id="infoClose">Fermer</button></div></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyC_JNVVGrd2whXRGfHuOlShhmZfaLQFLfw",
+  authDomain: "taclar-52e72.firebaseapp.com",
+  projectId: "taclar-52e72",
+  storageBucket: "taclar-52e72.firebasestorage.app",
+  messagingSenderId: "501812718028",
+  appId: "1:501812718028:web:45842bcde3db9049ec9569"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+</script>
+
 <script>
 var active=false,selectedSeat=null,startTime=null,driverName="",driverPin="1234",plateNumber="",currentIncident=null,cashInput="",pendingGap=0,pendingCash=0,sessionId=null,restoring=false,pendingAmount=0;
 var seats={SP:{amount:0,occupied:false},SG:{amount:0,occupied:false},SM:{amount:0,occupied:false},SD:{amount:0,occupied:false}};
@@ -112,6 +128,44 @@ var seatList=["SP","SG","SM","SD"],publicActions=[],privateActions=[],incidentAc
 var incidentTypes=["Contrôle police","Panne véhicule","Embouteillage important","Agression / vol","Accident","Client problématique","Manque carburant","Pause chauffeur","Route bloquée","Autre"];
 function el(id){return document.getElementById(id)} function money(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g," ")+" FCFA"} function nowText(){var d=new Date();return d.getHours().toString().padStart(2,"0")+":"+d.getMinutes().toString().padStart(2,"0")}
 function countOnboard(){return seatList.filter(s=>seats[s].occupied).length} function totalAmount(){var t=0;seatList.forEach(s=>{if(seats[s].occupied)t+=seats[s].amount});privateActions.forEach(a=>{if(a.status==="descendu")t+=a.amount});return t} function passengersCount(){return privateActions.filter(a=>a.status==="descendu").length+countOnboard()}
+
+
+function firebaseSafeId(v){return String(v||"").replace(/[^a-zA-Z0-9_-]/g,"_") || ("S"+Date.now())}
+async function cloudSaveLive(status){
+  try{
+    if(typeof db==="undefined" || !sessionId)return;
+    var live={
+      sessionId:sessionId,
+      driver:driverName||"---",
+      plate:plateNumber||"---",
+      route:el("route").value,
+      status:status,
+      onboard:countOnboard(),
+      free:4-countOnboard(),
+      start:startTime||"--:--",
+      last:el("status").textContent,
+      incident:currentIncident||null,
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAtLocal:new Date().toLocaleString()
+    };
+    await db.collection("groupage_live").doc(firebaseSafeId(sessionId)).set(live,{merge:true});
+  }catch(e){console.log("cloudSaveLive error",e)}
+}
+async function cloudCloseSession(session){
+  try{
+    if(typeof db==="undefined")return;
+    await db.collection("groupage_sessions").doc(firebaseSafeId(session.sessionId)).set(Object.assign({},session,{
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAtLocal:new Date().toLocaleString()
+    }),{merge:true});
+    await db.collection("groupage_live").doc(firebaseSafeId(session.sessionId)).set({
+      sessionId:session.sessionId,driver:session.driver,plate:session.plate,route:session.route,
+      status:"closed",onboard:0,free:4,start:session.start,end:session.end,duration:session.duration,
+      last:"Session clôturée",incident:null,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAtLocal:new Date().toLocaleString()
+    },{merge:true});
+  }catch(e){console.log("cloudCloseSession error",e)}
+}
 
 function snapshot(status){
   return {active:active,sessionId:sessionId,driverName:driverName,driverPin:driverPin,plateNumber:plateNumber,route:el("route").value,vehicleType:el("vehicleType").value,startTime:startTime,selectedSeat:selectedSeat,seats:seats,publicActions:publicActions,privateActions:privateActions,incidentActions:incidentActions,currentIncident:currentIncident,statusText:el("status").textContent,status:status||"service",savedAt:nowText()};
@@ -124,7 +178,7 @@ function saveSession(status){
 }
 function saveLive(status){
   var live={driver:driverName||"---",route:el("route").value,vehicle:plateNumber||"Taxi 001",status:status,onboard:countOnboard(),free:4-countOnboard(),start:startTime||"--:--",last:el("status").textContent,incident:currentIncident,updated:nowText()};
-  localStorage.setItem("taclar_live",JSON.stringify(live));
+  localStorage.setItem("taclar_live",JSON.stringify(live)); cloudSaveLive(status);
 }
 function showResumeIfAny(){
   try{
@@ -147,6 +201,7 @@ function discardSavedSession(){
   if(confirm("Effacer la session active sauvegardée et commencer une nouvelle session ?")){
     localStorage.removeItem("taclar_driver_session");
     localStorage.removeItem("taclar_live");
+cloudCloseSession(session);
     el("resumeBox").style.display="none";
     active=false;selectedSeat=null;startTime=null;driverName="";driverPin="1234";plateNumber="";currentIncident=null;cashInput="";pendingGap=0;pendingCash=0;sessionId=null;
     seatList.forEach(s=>{seats[s].amount=0;seats[s].occupied=false});
@@ -257,6 +312,7 @@ if(!exists){
 }
 localStorage.removeItem("taclar_driver_session");
 localStorage.removeItem("taclar_live");
+cloudCloseSession(session);
 alert(exists?"Session déjà enregistrée. Aucun doublon ajouté.":"Session clôturée.\nDonnées envoyées à l'Admin local.");
 resetForNewSession();
 }
