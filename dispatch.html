@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V12.1.2</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V12.1.2.1</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -27,7 +27,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </style></head>
 <body>
 <div class="app">
-<div class="badge">DISPATCH V12.1.2</div>
+<div class="badge">DISPATCH V12.1.2.1</div>
 <h1>TACLAR Dispatch</h1>
 <div class="subtitle">Suivi opérationnel — Groupage</div>
 
@@ -87,11 +87,26 @@ function startFirebaseDispatch(){
     });
   }catch(e){console.log("firebase dispatch error",e)}
 }
+
+function uniqueDispatchRows(rows){
+  var map={};
+  rows.forEach(function(r){
+    var key=(r.sessionId||"")+"|"+(r.plate||"")+"|"+(r.driver||"")+"|"+(r.start||"");
+    if(!map[key]) map[key]=r;
+    else{
+      var existing=map[key];
+      if(existing.status==="closed" && r.status!=="closed") map[key]=r;
+      else if((r.updated||"")>(existing.updated||"")) map[key]=r;
+    }
+  });
+  return Object.values(map);
+}
+
 function getRows(){
   if(cloudLiveRows && cloudLiveRows.length){
-    return cloudLiveRows.map(function(x,i){
+    return uniqueDispatchRows(cloudLiveRows.map(function(x,i){
       return {
-        source:"cloud-"+(x.sessionId||i),
+        source:"cloud-"+(x.sessionId||i),sessionId:x.sessionId||"",
         plate:x.plate||"---",
         driver:x.driver||"---",
         route:x.route||"---",
@@ -105,7 +120,7 @@ function getRows(){
         incident:x.incident||null,
         updated:x.updatedAtLocal||""
       }
-    });
+    }));
   }
   var rows=[];
   try{
@@ -116,7 +131,7 @@ function getRows(){
     var sessions=JSON.parse(localStorage.getItem('taclar_sessions')||'[]');
     sessions.forEach(function(s,i){rows.push({source:'session-'+i,plate:s.plate||'---',driver:s.driver||'---',route:s.route||'---',status:'closed',onboard:0,free:4,start:s.start||'--:--',end:s.end||s.time||'--:--',duration:s.duration||'--',last:'Session clôturée',incident:(s.incidents&&s.incidents.length)?s.incidents[s.incidents.length-1]:null,updated:s.end||s.time||''})});
   }catch(e){}
-  return rows;
+  return uniqueDispatchRows(rows);
 }
 function render(){
   var rowsEl=document.getElementById('rows'); var hidden=getHidden();
