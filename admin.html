@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.1.2</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.1.2.1</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -36,7 +36,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </style></head>
 <body>
 <div class="app">
-<div class="badge">ADMIN V12.1.2</div>
+<div class="badge">ADMIN V12.1.2.1</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 
@@ -242,6 +242,18 @@ function normalizePlace(s){
 function buildAxisName(depart,arrivee){
   return normalizePlace(depart)+" → "+normalizePlace(arrivee);
 }
+function axisKey(name){
+  return String(name||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+async function axisExists(name){
+  var key=axisKey(name);
+  var snap=await db.collection("groupage_axes").get();
+  var found=false;
+  snap.forEach(function(doc){
+    if(axisKey(doc.data().name)===key)found=true;
+  });
+  return found;
+}
 function axisSort(a,b){
   var ao=Number((a.data.order==null)?9999:a.data.order);
   var bo=Number((b.data.order==null)?9999:b.data.order);
@@ -325,7 +337,7 @@ function nextOrder(){
     return max+10;
   });
 }
-function addAxis(){
+async function addAxis(){
   var depart=document.getElementById("axisDepart").value.trim();
   var arrivee=document.getElementById("axisArrivee").value.trim();
   var min=Number(document.getElementById("axisMin").value||200);
@@ -334,19 +346,29 @@ function addAxis(){
   var cleanDepart=normalizePlace(depart);
   var cleanArrivee=normalizePlace(arrivee);
   if(cleanDepart===cleanArrivee)return alert("Départ et arrivée doivent être différents.");
-  nextOrder().then(function(order){
-    var go={depart:cleanDepart,arrivee:cleanArrivee,name:buildAxisName(cleanDepart,cleanArrivee),min:min,active:true,order:order,createdAt:firebase.firestore.FieldValue.serverTimestamp()};
-    var back={depart:cleanArrivee,arrivee:cleanDepart,name:buildAxisName(cleanArrivee,cleanDepart),min:min,active:true,order:order+1,createdAt:firebase.firestore.FieldValue.serverTimestamp()};
-    var batch=db.batch();
+  var goName=buildAxisName(cleanDepart,cleanArrivee);
+  var backName=buildAxisName(cleanArrivee,cleanDepart);
+  var goExists=await axisExists(goName);
+  var backExists=await axisExists(backName);
+  if(goExists && backExists){
+    alert("Cet aller-retour existe déjà. Aucun doublon ajouté.");
+    return;
+  }
+  var order=await nextOrder();
+  var batch=db.batch();
+  if(!goExists){
     var ref1=db.collection("groupage_axes").doc();
+    batch.set(ref1,{depart:cleanDepart,arrivee:cleanArrivee,name:goName,min:min,active:true,order:order,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  }
+  if(!backExists){
     var ref2=db.collection("groupage_axes").doc();
-    batch.set(ref1,go);batch.set(ref2,back);
-    return batch.commit();
-  }).then(function(){
-    document.getElementById("axisDepart").value="";
-    document.getElementById("axisArrivee").value="";
-    document.getElementById("axisMin").value="";
-  });
+    batch.set(ref2,{depart:cleanArrivee,arrivee:cleanDepart,name:backName,min:min,active:true,order:order+1,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  }
+  await batch.commit();
+  document.getElementById("axisDepart").value="";
+  document.getElementById("axisArrivee").value="";
+  document.getElementById("axisMin").value="";
+  if(goExists || backExists) alert("Axe ajouté partiellement : le doublon existant n’a pas été recréé.");
 }
 function openAxisEdit(id,x){
   editingAxisId=id;
@@ -375,13 +397,18 @@ function saveAxisEdit(){
   }).then(cancelAxisEdit);
 }
 function moveAxis(id,direction,currentOrder,rows){
+  rows=rows.slice().sort(axisSort);
   var currentIndex=rows.findIndex(function(r){return r.id===id});
   var targetIndex=currentIndex+direction;
-  if(targetIndex<0||targetIndex>=rows.length)return;
+  if(currentIndex<0||targetIndex<0||targetIndex>=rows.length)return;
   var current=rows[currentIndex];
   var target=rows[targetIndex];
-  var currentO=Number(current.data.order==null?9999:current.data.order);
-  var targetO=Number(target.data.order==null?9999:target.data.order);
+  var currentO=Number(current.data.order==null?currentIndex+1:current.data.order);
+  var targetO=Number(target.data.order==null?targetIndex+1:target.data.order);
+  if(currentO===targetO){
+    currentO=currentIndex+1;
+    targetO=targetIndex+1;
+  }
   var batch=db.batch();
   batch.update(db.collection("groupage_axes").doc(current.id),{order:targetO,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
   batch.update(db.collection("groupage_axes").doc(target.id),{order:currentO,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
