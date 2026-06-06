@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V11.5.3</title><style>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V11.6.3</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:430px;margin:auto;padding:10px;min-height:100vh}
@@ -37,7 +37,7 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 .resumeBox button{margin-top:8px}
 </style></head>
 <body><div class="app">
-<div class="badge">V11.5</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div><div class="resumeBox" id="resumeBox"><b>Session active détectée</b><div id="resumeText"></div><button id="resumeBtn">Reprendre session</button><button class="btn-red" id="discardResumeBtn">Nouvelle session</button></div>
+<div class="badge">V11.6</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div><div class="resumeBox" id="resumeBox"><b>Session active détectée</b><div id="resumeText"></div><button id="resumeBtn">Reprendre session</button><button class="btn-red" id="discardResumeBtn">Nouvelle session</button></div>
 <div class="card"><div class="grid2"><div><label>Axe</label><select id="route"><option>Okala → Aéroport</option><option>Akanda → Centre-ville</option><option>Nzeng-Ayong → Aéroport</option><option>Charbonnages → Louis</option><option>Owendo → Centre-ville</option><option>Sans axe fixe</option></select></div><div><label>Type véhicule</label><select id="vehicleType"><option value="4">Corolla - 4 places</option></select></div></div><br><label>Plaque véhicule</label><input id="plateInput" placeholder="Ex : LBV-1234"><br><br><label>Nom chauffeur</label><input id="driverNameInput" placeholder="Ex : Paul"><br><br><label>PIN chauffeur</label><input id="driverPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="1234"><br><br><button id="startBtn">Démarrer la session</button></div>
 <div class="summary"><div class="box"><small>À bord</small><strong><span id="onboard">0</span>/4</strong></div><div class="box"><small>Places libres</small><strong class="green" id="freeSeats">4</strong></div></div>
 <div class="card"><label>Plan des sièges</label><div class="seatMap"><div class="frontRow"><div class="driverSeat"><div><div style="font-size:12px">CHAUFFEUR</div><div id="driverNameDisplay" style="font-size:19px;font-weight:900">---</div></div></div><button class="seatBtn seatFree" id="seat-SP" data-seat="SP"><span class="code">SP</span><span class="amount">Libre</span></button></div><div class="backRow"><button class="seatBtn seatFree" id="seat-SG"><span class="code">SG</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SM"><span class="code">SM</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SD"><span class="code">SD</span><span class="amount">Libre</span></button></div></div>
@@ -162,86 +162,23 @@ function render(){el("onboard").textContent=countOnboard();el("freeSeats").textC
 function hidePanels(){el("farePanel").style.display="none";el("seatPanel").style.display="none"}
 function startSession(){var n=el("driverNameInput").value.trim(),p=el("driverPinInput").value.trim();var plate=el("plateInput").value.trim();if(!plate)return alert("Entre la plaque du véhicule.");if(!n)return alert("Entre le nom du chauffeur."); if(!p)return alert("Entre le PIN chauffeur.");driverName=n;driverPin=p;plateNumber=plate;active=true;sessionId="S"+Date.now();startTime=nowText();publicActions=[];privateActions=[];incidentActions=[];currentIncident=null;seatList.forEach(s=>{seats[s].amount=0;seats[s].occupied=false});el("driverNameDisplay").textContent=driverName;el("plateInput").disabled=true;el("driverNameInput").disabled=true;el("driverPinInput").disabled=true;el("route").disabled=true;el("vehicleType").disabled=true;el("startBtn").disabled=true;el("status").textContent="Session active - "+driverName;render()}
 function chooseSeat(c){if(!active)return alert("Démarre d'abord la session.");selectedSeat=c;hidePanels();if(seats[c].occupied){el("seatPanelTitle").textContent=c+" occupé";el("seatPanel").style.display="block"}else{el("farePanel").style.display="grid"}}
-
 function addPassenger(a){
-  pendingAmount=a;
-  el("paymentAmount").textContent=money(a);
-  el("paymentModal").style.display="flex";
+pendingAmount=a;
+el("paymentAmount").textContent=money(a);
+el("paymentModal").style.display="flex";
 }
-
 function confirmPassenger(payment){
-  if(!selectedSeat)return;
-  var ok=confirm("Confirmer paiement :\n"+money(pendingAmount)+" — "+payment+" ?");
-  if(!ok)return;
-  seats[selectedSeat].amount=pendingAmount;
-  seats[selectedSeat].occupied=true;
-  privateActions.push({seat:selectedSeat,amount:pendingAmount,payment:payment,status:"à bord",time:nowText()});
-  addPublicAction(selectedSeat+" occupé");
-  el("status").textContent=selectedSeat+" ajouté - "+payment;
-  el("paymentModal").style.display="none";
-  hidePanels();
-  render();
-}
-
-function adjust(d){
-  if(!selectedSeat || !seats[selectedSeat].occupied)return;
-  if(d<0 && !confirm("Confirmer la baisse de "+money(Math.abs(d))+" ?"))return;
-  var next=seats[selectedSeat].amount+d;
-  if(next<200)return alert("Minimum 200 FCFA.");
-  seats[selectedSeat].amount=next;
-  for(var i=privateActions.length-1;i>=0;i--){
-    if(privateActions[i].seat===selectedSeat && privateActions[i].status==="à bord"){
-      privateActions[i].amount=next;
-      break;
-    }
-  }
-  el("status").textContent=selectedSeat+" ajusté";
-  hidePanels();
-  render();
-}
-
-function dropSeat(){
-  if(!selectedSeat || !seats[selectedSeat].occupied)return alert("Aucun passager sur ce siège.");
-  if(!confirm("Confirmer que "+selectedSeat+" est descendu ?"))return;
-  for(var i=privateActions.length-1;i>=0;i--){
-    if(privateActions[i].seat===selectedSeat && privateActions[i].status==="à bord"){
-      privateActions[i].status="descendu";
-      privateActions[i].dropTime=nowText();
-      privateActions[i].amount=seats[selectedSeat].amount;
-      break;
-    }
-  }
-  seats[selectedSeat].amount=0;
-  seats[selectedSeat].occupied=false;
-  addPublicAction(selectedSeat+" descendu");
-  el("status").textContent=selectedSeat+" libéré";
-  selectedSeat=null;
-  hidePanels();
-  render();
-}
-
-function dropAllSeats(){
-  if(!active)return alert("Aucune session active.");
-  var occupied=seatList.filter(function(s){return seats[s].occupied});
-  if(occupied.length===0)return alert("Aucun siège occupé.");
-  if(!confirm("Confirmer que tous les passagers sont descendus ?"))return;
-  occupied.forEach(function(seat){
-    for(var i=privateActions.length-1;i>=0;i--){
-      if(privateActions[i].seat===seat && privateActions[i].status==="à bord"){
-        privateActions[i].status="descendu";
-        privateActions[i].dropTime=nowText();
-        privateActions[i].amount=seats[seat].amount;
-        break;
-      }
-    }
-    seats[seat].amount=0;
-    seats[seat].occupied=false;
-  });
-  addPublicAction("Tous descendus");
-  el("status").textContent="Tous les sièges libérés";
-  selectedSeat=null;
-  hidePanels();
-  render();
+if(!selectedSeat)return;
+var ok=confirm("Confirmer paiement :\n"+money(pendingAmount)+" — "+payment+" ?");
+if(!ok)return;
+seats[selectedSeat].amount=pendingAmount;
+seats[selectedSeat].occupied=true;
+privateActions.push({seat:selectedSeat,amount:pendingAmount,payment:payment,status:"à bord",time:nowText()});
+addPublicAction(selectedSeat+" occupé");
+el("status").textContent=selectedSeat+" ajouté - "+payment;
+el("paymentModal").style.display="none";
+hidePanels();
+render();
 }
 
 function reportIncident(r){if(r==="Autre"){el("incidentModal").style.display="none";el("customIncidentInput").value="";el("customIncidentModal").style.display="flex";return}if(!confirm("Confirmer incident : "+r+" ?"))return;currentIncident={reason:r,time:nowText(),driver:driverName};incidentActions.push(currentIncident);el("status").textContent="Incident signalé : "+r;el("incidentModal").style.display="none";render()}
@@ -309,7 +246,7 @@ el("plateInput").value="";el("driverNameInput").value="";el("driverPinInput").va
 el("status").textContent="Choisir un axe puis démarrer";
 hidePanels();render();
 }
-window.addEventListener("load",()=>{incidentTypes.forEach(i=>{var b=document.createElement("button");b.textContent=i;b.onclick=()=>reportIncident(i);el("incidentChoices").appendChild(b)});el("startBtn").onclick=startSession;seatList.forEach(c=>el("seat-"+c).onclick=()=>chooseSeat(c));document.querySelectorAll(".fare").forEach(b=>b.onclick=()=>addPassenger(Number(b.dataset.amount)));el("plus500").onclick=()=>adjust(500);el("minus500").onclick=()=>adjust(-500);el("plus1000").onclick=()=>adjust(1000);el("minus1000").onclick=()=>adjust(-1000);el("dropSeat").onclick=dropSeat;el("incidentBtn").onclick=()=>{if(!active)return alert("Démarre d’abord la session.");el("incidentModal").style.display="flex"};el("incidentCancel").onclick=()=>el("incidentModal").style.display="none";el("resolveIncident").onclick=()=>{currentIncident=null;el("status").textContent="Incident résolu";render()};el("infoBtn").onclick=()=>{el("pinInput").value="";el("pinModal").style.display="flex"};el("pinSubmit").onclick=()=>{if(el("pinInput").value===driverPin){el("pinModal").style.display="none";showInfo()}else alert("PIN incorrect.")};el("pinCancel").onclick=()=>el("pinModal").style.display="none";el("infoClose").onclick=()=>el("infoModal").style.display="none";el("dropAllSeats").onclick=dropAllSeats;el("payCash").onclick=function(){confirmPassenger("Cash")};el("payAirtel").onclick=function(){confirmPassenger("Airtel Money")};el("payMoov").onclick=function(){confirmPassenger("Moov Money")};el("paymentCancel").onclick=function(){el("paymentModal").style.display="none";pendingAmount=0};pendingAmount=0};el("close").onclick=closeSession;
+window.addEventListener("load",()=>{incidentTypes.forEach(i=>{var b=document.createElement("button");b.textContent=i;b.onclick=()=>reportIncident(i);el("incidentChoices").appendChild(b)});el("startBtn").onclick=startSession;seatList.forEach(c=>el("seat-"+c).onclick=()=>chooseSeat(c));document.querySelectorAll(".fare").forEach(b=>b.onclick=()=>addPassenger(Number(b.dataset.amount)));el("plus500").onclick=()=>adjust(500);el("minus500").onclick=()=>adjust(-500);el("plus1000").onclick=()=>adjust(1000);el("minus1000").onclick=()=>adjust(-1000);el("dropSeat").onclick=dropSeat;el("incidentBtn").onclick=()=>{if(!active)return alert("Démarre d’abord la session.");el("incidentModal").style.display="flex"};el("incidentCancel").onclick=()=>el("incidentModal").style.display="none";el("resolveIncident").onclick=()=>{currentIncident=null;el("status").textContent="Incident résolu";render()};el("infoBtn").onclick=()=>{el("pinInput").value="";el("pinModal").style.display="flex"};el("pinSubmit").onclick=()=>{if(el("pinInput").value===driverPin){el("pinModal").style.display="none";showInfo()}else alert("PIN incorrect.")};el("pinCancel").onclick=()=>el("pinModal").style.display="none";el("infoClose").onclick=()=>el("infoModal").style.display="none";el("dropAllSeats").onclick=dropAllSeats;el("payCash").onclick=()=>confirmPassenger("Cash");el("payAirtel").onclick=()=>confirmPassenger("Airtel Money");el("payMoov").onclick=()=>confirmPassenger("Moov Money");el("paymentCancel").onclick=()=>{el("paymentModal").style.display="none";pendingAmount=0};el("close").onclick=closeSession;
 el("resumeBtn").onclick=restoreSession;
 el("discardResumeBtn").onclick=discardSavedSession;
 el("customIncidentConfirm").onclick=()=>{var txt=el("customIncidentInput").value.trim();if(!txt)return alert("Écrire le motif.");if(!confirm("Confirmer incident : "+txt+" ?"))return;currentIncident={reason:txt,time:nowText(),driver:driverName};incidentActions.push(currentIncident);el("status").textContent="Incident signalé : "+txt;el("customIncidentModal").style.display="none";render()};
