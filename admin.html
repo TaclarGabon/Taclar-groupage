@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.1</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.1.1</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -22,7 +22,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 .modal{width:100%;max-width:460px;background:#102629;border-radius:24px;padding:20px;border:1px solid rgba(255,255,255,.15);max-height:88vh;overflow:auto}
 @media(max-width:700px){.app{max-width:430px;padding:10px}.summary{grid-template-columns:1fr 1fr}table{font-size:11px}th,td{padding:6px}}
 
-.axisGrid{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;margin-top:10px}
+.axisGrid{display:grid;grid-template-columns:1fr 1fr 110px auto;gap:8px;margin-top:10px}
 .axisList{display:flex;flex-direction:column;gap:8px;margin-top:10px}
 .axisRow{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px}
 @media(max-width:700px){.axisGrid,.axisRow{grid-template-columns:1fr}}
@@ -30,7 +30,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </style></head>
 <body>
 <div class="app">
-<div class="badge">ADMIN V12.1</div>
+<div class="badge">ADMIN V12.1.1</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 
@@ -47,14 +47,18 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </div>
 
 
+
 <div class="card">
 <h2>Gestion des axes</h2>
-<p class="muted">Ces axes apparaîtront automatiquement dans l’interface Chauffeur.</p>
+<p class="muted">Ajouter un axe propre : départ + arrivée. Le format sera créé automatiquement.</p>
+
 <div class="axisGrid">
-<input id="axisName" placeholder="Ex : Okala → Aéroport" style="letter-spacing:0;text-align:left">
+<input id="axisDepart" placeholder="Départ ex : Okala" style="letter-spacing:0;text-align:left">
+<input id="axisArrivee" placeholder="Arrivée ex : Aéroport" style="letter-spacing:0;text-align:left">
 <input id="axisMin" placeholder="Min. ex : 200" type="number" style="letter-spacing:0;text-align:left">
 <button onclick="addAxis()">Ajouter axe</button>
 </div>
+
 <div class="axisList" id="axisList"></div>
 </div>
 
@@ -176,19 +180,35 @@ function clearData(){
   if(confirm('Effacer tous les rapports test ?')){localStorage.removeItem('taclar_sessions');render();}
 }
 
+
 function safeText(s){
   return String(s||"").replace(/[&<>"']/g,function(c){
     return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
   });
 }
+function normalizePlace(s){
+  s=String(s||"").trim().replace(/\s+/g," ");
+  if(!s)return "";
+  return s.split(" ").map(function(part){
+    if(part.indexOf("-")>-1){
+      return part.split("-").map(function(p){
+        return p.charAt(0).toUpperCase()+p.slice(1).toLowerCase();
+      }).join("-");
+    }
+    return part.charAt(0).toUpperCase()+part.slice(1).toLowerCase();
+  }).join(" ");
+}
+function buildAxisName(depart,arrivee){
+  return normalizePlace(depart)+" → "+normalizePlace(arrivee);
+}
 function seedDefaultAxes(){
   var defaults=[
-    {name:"Okala → Aéroport",min:200,active:true},
-    {name:"Okala → Centre-ville",min:200,active:true},
-    {name:"Akanda → Centre-ville",min:200,active:true},
-    {name:"Owendo → Centre-ville",min:200,active:true},
-    {name:"Charbonnages → Louis",min:200,active:true},
-    {name:"Nzeng-Ayong → Aéroport",min:200,active:true}
+    {depart:"Okala",arrivee:"Aéroport",name:"Okala → Aéroport",min:200,active:true},
+    {depart:"Okala",arrivee:"Centre-ville",name:"Okala → Centre-ville",min:200,active:true},
+    {depart:"Akanda",arrivee:"Centre-ville",name:"Akanda → Centre-ville",min:200,active:true},
+    {depart:"Owendo",arrivee:"Centre-ville",name:"Owendo → Centre-ville",min:200,active:true},
+    {depart:"Charbonnages",arrivee:"Louis",name:"Charbonnages → Louis",min:200,active:true},
+    {depart:"Nzeng-Ayong",arrivee:"Aéroport",name:"Nzeng-Ayong → Aéroport",min:200,active:true}
   ];
   db.collection("groupage_axes").get().then(function(snap){
     if(!snap.empty)return;
@@ -209,7 +229,7 @@ function startAxesAdmin(){
         var row=document.createElement("div");
         row.className="axisRow";
         var b1=document.createElement("div");
-        b1.innerHTML="<b>"+safeText(x.name||"---")+"</b><br><span class='muted'>Min : "+(x.min||200)+" FCFA · "+(x.active===false?"Inactif":"Actif")+"</span>";
+        b1.innerHTML="<b>"+safeText(x.name||"---")+"</b><br><span class='muted'>Départ : "+safeText(x.depart||"---")+" · Arrivée : "+safeText(x.arrivee||"---")+"<br>Min : "+(x.min||200)+" FCFA · "+(x.active===false?"Inactif":"Actif")+"</span>";
         var b2=document.createElement("button");
         b2.className="btn-dark";
         b2.textContent=x.active===false?"Activer":"Désactiver";
@@ -225,11 +245,24 @@ function startAxesAdmin(){
   }catch(e){console.log("axes admin error",e)}
 }
 function addAxis(){
-  var name=document.getElementById("axisName").value.trim();
+  var depart=document.getElementById("axisDepart").value.trim();
+  var arrivee=document.getElementById("axisArrivee").value.trim();
   var min=Number(document.getElementById("axisMin").value||200);
-  if(!name)return alert("Écrire le nom de l’axe.");
-  db.collection("groupage_axes").add({name:name,min:min,active:true,createdAt:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){
-    document.getElementById("axisName").value="";
+  if(!depart)return alert("Écrire le départ.");
+  if(!arrivee)return alert("Écrire l’arrivée.");
+  var cleanDepart=normalizePlace(depart);
+  var cleanArrivee=normalizePlace(arrivee);
+  var name=buildAxisName(cleanDepart,cleanArrivee);
+  db.collection("groupage_axes").add({
+    depart:cleanDepart,
+    arrivee:cleanArrivee,
+    name:name,
+    min:min,
+    active:true,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
+    document.getElementById("axisDepart").value="";
+    document.getElementById("axisArrivee").value="";
     document.getElementById("axisMin").value="";
   });
 }
