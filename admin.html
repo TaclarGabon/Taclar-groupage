@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.1.2.4</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.1.2.5</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -33,10 +33,17 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 .editBox{display:none;background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.30);border-radius:14px;padding:10px;margin-top:10px}
 .editGrid{display:grid;grid-template-columns:1fr 1fr 100px;gap:8px}
 @media(max-width:700px){.editGrid{grid-template-columns:1fr}}
+
+.accordionHead{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;user-select:none}
+.accordionHead h2{margin:0}
+.accordionIcon{font-size:22px;font-weight:bold;color:#5eead4}
+.accordionBody{display:none;margin-top:14px}
+.accordionBody.open{display:block}
+
 </style></head>
 <body>
 <div class="app">
-<div class="badge">ADMIN V12.1.2.4</div>
+<div class="badge">ADMIN V12.1.2.5</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 
@@ -56,7 +63,8 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 
 
 <div class="card">
-<h2>Gestion des axes</h2>
+<div class="accordionHead" onclick="toggleAccordion('axesBody','axesIcon')"><h2>Gestion des axes</h2><span class="accordionIcon" id="axesIcon">▶</span></div>
+<div class="accordionBody" id="axesBody">
 <p class="muted">Ajoute un départ et une arrivée. TACLAR crée automatiquement l’aller et le retour.</p>
 
 <div class="axisGrid">
@@ -81,8 +89,11 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 <div class="axisList" id="axisList"></div>
 </div>
 
+</div>
+</div>
 <div class="card">
-<h2>Rapport des sessions</h2>
+<div class="accordionHead" onclick="toggleAccordion('reportBody','reportIcon')"><h2>Rapport des sessions</h2><span class="accordionIcon" id="reportIcon">▼</span></div>
+<div class="accordionBody open" id="reportBody">
 <table>
 <thead><tr>
 <th>Date</th><th>Début</th><th>Fin</th><th>Durée</th><th>Chauffeur</th><th>Plaque</th><th>Pass.</th><th>Cash</th><th>Airtel</th><th>Montant</th><th>Comm.</th><th>Net</th><th>Inc.</th><th>Action</th>
@@ -101,6 +112,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+</div>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyC_JNVVGrd2whXRGfHuOlShhmZfaLQFLfw",
@@ -262,6 +274,21 @@ async function clearData(){
 
 
 var editingAxisId=null;
+
+
+function toggleAccordion(bodyId,iconId){
+  var body=document.getElementById(bodyId);
+  var icon=document.getElementById(iconId);
+  if(!body||!icon)return;
+  var open=body.classList.contains("open");
+  if(open){
+    body.classList.remove("open");
+    icon.textContent="▶";
+  }else{
+    body.classList.add("open");
+    icon.textContent="▼";
+  }
+}
 
 function safeText(s){
   return String(s||"").replace(/[&<>"']/g,function(c){
