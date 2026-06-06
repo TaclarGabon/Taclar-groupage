@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V10.8</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V11.2</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -27,7 +27,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </style></head>
 <body>
 <div class="app">
-<div class="badge">DISPATCH V10.8</div>
+<div class="badge">DISPATCH V11.2</div>
 <h1>TACLAR Dispatch</h1>
 <div class="subtitle">Suivi opérationnel — Groupage</div>
 
@@ -65,7 +65,7 @@ function getRows(){
   var rows=[];
   try{
     var live=JSON.parse(localStorage.getItem('taclar_live')||'null');
-    if(live) rows.push({source:'live',plate:live.vehicle||'---',driver:live.driver||'---',route:live.route||'---',status:live.status||'closed',onboard:Number(live.onboard||0),free:live.free==null?4:Number(live.free),start:live.start||'--:--',end:live.status==='closed'?(live.updated||'--:--'):'--:--',duration:'En cours',last:live.last||'',incident:live.incident||null,updated:live.updated||''});
+    if(live && live.status!=='closed') rows.push({source:'live',plate:live.vehicle||'---',driver:live.driver||'---',route:live.route||'---',status:live.status||'closed',onboard:Number(live.onboard||0),free:live.free==null?4:Number(live.free),start:live.start||'--:--',end:'--:--',duration:'En cours',last:live.last||'',incident:live.incident||null,updated:live.updated||''});
   }catch(e){}
   try{
     var sessions=JSON.parse(localStorage.getItem('taclar_sessions')||'[]');
