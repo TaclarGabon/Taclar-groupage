@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V12.1.2.2</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V12.1.2.3</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -27,7 +27,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </style></head>
 <body>
 <div class="app">
-<div class="badge">DISPATCH V12.1.2.2</div>
+<div class="badge">DISPATCH V12.1.2.3</div>
 <h1>TACLAR Dispatch</h1>
 <div class="subtitle">Suivi opérationnel — Groupage</div>
 
@@ -169,6 +169,20 @@ function showDetail(i){
   document.getElementById('detailModal').style.display='flex';
 }
 function closeDetail(){document.getElementById('detailModal').style.display='none'}
+
+async function deleteLiveAll(){
+  var total=0;
+  while(true){
+    var snap=await db.collection("groupage_live").limit(400).get();
+    if(snap.empty)break;
+    var batch=db.batch();
+    snap.forEach(function(doc){batch.delete(doc.ref);total++;});
+    await batch.commit();
+    if(snap.size<400)break;
+  }
+  return total;
+}
+
 function clearDispatch(){if(confirm('Effacer le dernier statut dispatch et les lignes masquées ?')){localStorage.removeItem('taclar_live');localStorage.removeItem('taclar_dispatch_hidden');render();}}
 render();startFirebaseDispatch();setInterval(render,3000);
 </script>
