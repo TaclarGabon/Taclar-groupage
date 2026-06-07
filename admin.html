@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.3.1</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -21,10 +21,30 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10;padding:18px;align-items:center;justify-content:center}
 .modal{width:100%;max-width:460px;background:#102629;border-radius:24px;padding:20px;border:1px solid rgba(255,255,255,.15);max-height:88vh;overflow:auto}
 @media(max-width:700px){.app{max-width:430px;padding:10px}.summary{grid-template-columns:1fr 1fr}table{font-size:11px}th,td{padding:6px}}
+
+.axisGrid{display:grid;grid-template-columns:1fr 1fr 110px auto;gap:8px;margin-top:10px}
+.axisList{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.axisRow{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px}
+@media(max-width:700px){.axisGrid,.axisRow{grid-template-columns:1fr}}
+
+
+.axisActions{display:flex;gap:6px;flex-wrap:wrap}
+.axisActions button{min-height:34px;font-size:12px;padding:6px 8px}
+.editBox{display:none;background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.30);border-radius:14px;padding:10px;margin-top:10px}
+.editGrid{display:grid;grid-template-columns:1fr 1fr 100px;gap:8px}
+@media(max-width:700px){.editGrid{grid-template-columns:1fr}}
+
+.accordionHead{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;user-select:none}
+.accordionHead h2{margin:0}
+.accordionIcon{font-size:22px;font-weight:bold;color:#5eead4}
+.accordionBody{display:none;margin-top:14px}
+.accordionBody.open{display:block}
+
 </style></head>
 <body>
+<p class="muted"><b>Base saine V12.3.1 :</b> gestion PIN/chauffeur automatique mise en pause. Chauffeur = saisie manuelle.</p>
 <div class="app">
-<div class="badge">ADMIN V12</div>
+<div class="badge">ADMIN V12.3.1</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 
@@ -40,8 +60,41 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 <div class="box"><small>Comm. TACLAR</small><strong id="cSum">0 FCFA</strong></div>
 </div>
 
+
+
+
 <div class="card">
-<h2>Rapport des sessions</h2>
+<div class="accordionHead" onclick="toggleAccordion('axesBody','axesIcon')"><h2>Gestion des axes</h2><span class="accordionIcon" id="axesIcon">▶</span></div>
+<div class="accordionBody" id="axesBody">
+<p class="muted">Ajoute un départ et une arrivée. TACLAR crée automatiquement l’aller et le retour.</p>
+
+<div class="axisGrid">
+<input id="axisDepart" placeholder="Départ ex : Okala" style="letter-spacing:0;text-align:left">
+<input id="axisArrivee" placeholder="Arrivée ex : Aéroport" style="letter-spacing:0;text-align:left">
+<input id="axisMin" placeholder="Min. ex : 200" type="number" style="letter-spacing:0;text-align:left">
+<button onclick="addAxis()">Ajouter aller-retour</button>
+</div>
+
+<div class="editBox" id="editAxisBox">
+<h3>Modifier axe</h3>
+<div class="editGrid">
+<input id="editDepart" placeholder="Départ" style="letter-spacing:0;text-align:left">
+<input id="editArrivee" placeholder="Arrivée" style="letter-spacing:0;text-align:left">
+<input id="editMin" placeholder="Min." type="number" style="letter-spacing:0;text-align:left">
+</div>
+<br>
+<button onclick="saveAxisEdit()">Enregistrer</button>
+<button class="btn-dark" onclick="cancelAxisEdit()">Annuler</button>
+</div>
+
+<div class="axisList" id="axisList"></div>
+</div>
+
+</div>
+</div>
+<div class="card">
+<div class="accordionHead" onclick="toggleAccordion('reportBody','reportIcon')"><h2>Rapport des sessions</h2><span class="accordionIcon" id="reportIcon">▼</span></div>
+<div class="accordionBody open" id="reportBody">
 <table>
 <thead><tr>
 <th>Date</th><th>Début</th><th>Fin</th><th>Durée</th><th>Chauffeur</th><th>Plaque</th><th>Pass.</th><th>Cash</th><th>Airtel</th><th>Montant</th><th>Comm.</th><th>Net</th><th>Inc.</th><th>Action</th>
@@ -60,6 +113,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+</div>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyC_JNVVGrd2whXRGfHuOlShhmZfaLQFLfw",
@@ -150,13 +204,311 @@ function showDetail(i){
   document.getElementById('detailModal').style.display='flex';
 }
 function closeDetail(){document.getElementById('detailModal').style.display='none'}
-function deleteSession(i){
-  var s=getSessions(); if(!s[i])return;
-  if(confirm('Supprimer cette ligne Admin ?')){s.splice(i,1);saveSessions(s);render();}
+async function deleteSession(i){
+  var sessions=getSessions();
+  var session=sessions[i];
+  if(!confirm("Supprimer cette ligne ?"))return;
+  sessions.splice(i,1);
+  saveSessions(sessions);
+  await deleteSessionFromFirebase(session);
+  render();
 }
-function clearData(){
-  if(confirm('Effacer tous les rapports test ?')){localStorage.removeItem('taclar_sessions');render();}
+
+async function deleteCollectionAll(collectionName){
+  var total=0;
+  while(true){
+    var snap=await db.collection(collectionName).limit(400).get();
+    if(snap.empty)break;
+    var batch=db.batch();
+    snap.forEach(function(doc){batch.delete(doc.ref);total++;});
+    await batch.commit();
+    if(snap.size<400)break;
+  }
+  return total;
 }
-render();startFirebaseAdmin();
+async function clearAdminFirebaseData(){
+  await deleteCollectionAll("groupage_sessions");
+  await deleteCollectionAll("groupage_live");
+}
+async function deleteSessionFromFirebase(session){
+  try{
+    if(!session)return;
+    if(session.sessionId){
+      await db.collection("groupage_sessions").doc(String(session.sessionId).replace(/[^a-zA-Z0-9_-]/g,"_")).delete().catch(function(){});
+      await db.collection("groupage_live").doc(String(session.sessionId).replace(/[^a-zA-Z0-9_-]/g,"_")).delete().catch(function(){});
+      return;
+    }
+    var snap=await db.collection("groupage_sessions").get();
+    var batch=db.batch();
+    var deleted=false;
+    snap.forEach(function(doc){
+      var x=doc.data();
+      if(!deleted &&
+        String(x.driver||"")===String(session.driver||"") &&
+        String(x.plate||"")===String(session.plate||"") &&
+        String(x.start||"")===String(session.start||"") &&
+        Number(x.total||0)===Number(session.total||0)){
+          batch.delete(doc.ref);
+          deleted=true;
+      }
+    });
+    if(deleted)await batch.commit();
+  }catch(e){console.log("deleteSessionFromFirebase error",e)}
+}
+
+async function clearData(){
+  if(!confirm("Effacer tous les rapports test ?"))return;
+  try{
+    localStorage.removeItem("taclar_sessions");
+    localStorage.removeItem("taclar_live");
+    localStorage.removeItem("taclar_dispatch_hidden");
+    await clearAdminFirebaseData();
+    render();
+    alert("Rapports test effacés dans Firebase.");
+    location.reload();
+  }catch(e){
+    console.log("Erreur effacement Firebase",e);
+    alert("Erreur : Firebase n’a pas tout effacé. Vérifie les règles Firestore.");
+  }
+}
+
+
+
+var editingAxisId=null;
+
+
+function toggleAccordion(bodyId,iconId){
+  var body=document.getElementById(bodyId);
+  var icon=document.getElementById(iconId);
+  if(!body||!icon)return;
+  var open=body.classList.contains("open");
+  if(open){
+    body.classList.remove("open");
+    icon.textContent="▶";
+  }else{
+    body.classList.add("open");
+    icon.textContent="▼";
+  }
+}
+
+function safeText(s){
+  return String(s||"").replace(/[&<>"']/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+  });
+}
+function normalizePlace(s){
+  s=String(s||"").trim().replace(/\s+/g," ");
+  if(!s)return "";
+  var special={
+    "centre ville":"Centre-ville",
+    "centre-ville":"Centre-ville",
+    "aeroport":"Aéroport",
+    "aéroport":"Aéroport",
+    "nzeng ayong":"Nzeng-Ayong",
+    "nzeng-ayong":"Nzeng-Ayong",
+    "okala":"Okala",
+    "akanda":"Akanda",
+    "owendo":"Owendo",
+    "charbonnages":"Charbonnages",
+    "charbonnage":"Charbonnages",
+    "louis":"Louis",
+    "mikongo":"Mikongo",
+    "mikolongo":"Mikolongo"
+  };
+  var key=s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  key=key.replace(/-/g," ").replace(/\s+/g," ").trim();
+  if(special[key])return special[key];
+  return s.split(" ").map(function(part){
+    if(part.indexOf("-")>-1){
+      return part.split("-").map(function(p){
+        return p.charAt(0).toUpperCase()+p.slice(1).toLowerCase();
+      }).join("-");
+    }
+    return part.charAt(0).toUpperCase()+part.slice(1).toLowerCase();
+  }).join(" ");
+}
+function buildAxisName(depart,arrivee){
+  return normalizePlace(depart)+" → "+normalizePlace(arrivee);
+}
+function axisKey(name){
+  return String(name||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+async function axisExists(name){
+  var key=axisKey(name);
+  var snap=await db.collection("groupage_axes").get();
+  var found=false;
+  snap.forEach(function(doc){
+    if(axisKey(doc.data().name)===key)found=true;
+  });
+  return found;
+}
+function axisSort(a,b){
+  var ao=Number((a.data.order==null)?9999:a.data.order);
+  var bo=Number((b.data.order==null)?9999:b.data.order);
+  if(ao!==bo)return ao-bo;
+  return (a.data.name||"").localeCompare(b.data.name||"");
+}
+function seedDefaultAxes(){
+  var defaults=[
+    {depart:"Akanda",arrivee:"Centre-ville",name:"Akanda → Centre-ville",min:200,active:true,order:10},
+    {depart:"Centre-ville",arrivee:"Akanda",name:"Centre-ville → Akanda",min:200,active:true,order:11},
+    {depart:"Okala",arrivee:"Aéroport",name:"Okala → Aéroport",min:200,active:true,order:20},
+    {depart:"Aéroport",arrivee:"Okala",name:"Aéroport → Okala",min:200,active:true,order:21},
+    {depart:"Okala",arrivee:"Centre-ville",name:"Okala → Centre-ville",min:200,active:true,order:30},
+    {depart:"Centre-ville",arrivee:"Okala",name:"Centre-ville → Okala",min:200,active:true,order:31},
+    {depart:"Charbonnages",arrivee:"Louis",name:"Charbonnages → Louis",min:200,active:true,order:40},
+    {depart:"Louis",arrivee:"Charbonnages",name:"Louis → Charbonnages",min:200,active:true,order:41},
+    {depart:"Nzeng-Ayong",arrivee:"Aéroport",name:"Nzeng-Ayong → Aéroport",min:200,active:true,order:50},
+    {depart:"Aéroport",arrivee:"Nzeng-Ayong",name:"Aéroport → Nzeng-Ayong",min:200,active:true,order:51}
+  ];
+  db.collection("groupage_axes").get().then(function(snap){
+    if(!snap.empty)return;
+    defaults.forEach(function(x){
+      db.collection("groupage_axes").add(Object.assign({},x,{createdAt:firebase.firestore.FieldValue.serverTimestamp()}));
+    });
+  });
+}
+function startAxesAdmin(){
+  try{
+    seedDefaultAxes();
+    db.collection("groupage_axes").onSnapshot(function(snapshot){
+      var list=document.getElementById("axisList");
+      if(!list)return;
+      list.innerHTML="";
+      var rows=[];
+      snapshot.forEach(function(doc){rows.push({id:doc.id,data:doc.data()})});
+      rows.sort(axisSort);
+      rows.forEach(function(item,idx){
+        var x=item.data;
+        var row=document.createElement("div");
+        row.className="axisRow";
+        var b1=document.createElement("div");
+        b1.innerHTML="<b>"+safeText(x.name||"---")+"</b><br><span class='muted'>Départ : "+safeText(x.depart||"---")+" · Arrivée : "+safeText(x.arrivee||"---")+"<br>Min : "+(x.min||200)+" FCFA · "+(x.active===false?"Inactif":"Actif")+" · Ordre : "+(x.order==null?9999:x.order)+"</span>";
+        var actions=document.createElement("div");
+        actions.className="axisActions";
+
+        var up=document.createElement("button");
+        up.className="btn-dark"; up.textContent="▲";
+        up.onclick=function(){moveAxis(item.id, -1, x.order, rows)};
+
+        var down=document.createElement("button");
+        down.className="btn-dark"; down.textContent="▼";
+        down.onclick=function(){moveAxis(item.id, 1, x.order, rows)};
+
+        var edit=document.createElement("button");
+        edit.className="btn-dark"; edit.textContent="Modifier";
+        edit.onclick=function(){openAxisEdit(item.id,x)};
+
+        var toggle=document.createElement("button");
+        toggle.className="btn-dark";
+        toggle.textContent=x.active===false?"Activer":"Désactiver";
+        toggle.onclick=function(){toggleAxis(item.id, x.active===false)};
+
+        var del=document.createElement("button");
+        del.className="btn-red"; del.textContent="Supprimer";
+        del.onclick=function(){deleteAxis(item.id)};
+
+        actions.appendChild(up);actions.appendChild(down);actions.appendChild(edit);actions.appendChild(toggle);actions.appendChild(del);
+        row.appendChild(b1); row.appendChild(actions);
+        list.appendChild(row);
+      });
+    });
+  }catch(e){console.log("axes admin error",e)}
+}
+function nextOrder(){
+  return db.collection("groupage_axes").get().then(function(snap){
+    var max=0;
+    snap.forEach(function(doc){
+      var o=Number(doc.data().order||0);
+      if(o>max)max=o;
+    });
+    return max+10;
+  });
+}
+async function addAxis(){
+  var depart=document.getElementById("axisDepart").value.trim();
+  var arrivee=document.getElementById("axisArrivee").value.trim();
+  var min=Number(document.getElementById("axisMin").value||200);
+  if(!depart)return alert("Écrire le départ.");
+  if(!arrivee)return alert("Écrire l’arrivée.");
+  var cleanDepart=normalizePlace(depart);
+  var cleanArrivee=normalizePlace(arrivee);
+  if(cleanDepart===cleanArrivee)return alert("Départ et arrivée doivent être différents.");
+  var goName=buildAxisName(cleanDepart,cleanArrivee);
+  var backName=buildAxisName(cleanArrivee,cleanDepart);
+  var goExists=await axisExists(goName);
+  var backExists=await axisExists(backName);
+  if(goExists && backExists){
+    alert("Cet aller-retour existe déjà. Aucun doublon ajouté.");
+    return;
+  }
+  var order=await nextOrder();
+  var batch=db.batch();
+  if(!goExists){
+    var ref1=db.collection("groupage_axes").doc();
+    batch.set(ref1,{depart:cleanDepart,arrivee:cleanArrivee,name:goName,min:min,active:true,order:order,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  }
+  if(!backExists){
+    var ref2=db.collection("groupage_axes").doc();
+    batch.set(ref2,{depart:cleanArrivee,arrivee:cleanDepart,name:backName,min:min,active:true,order:order+1,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  }
+  await batch.commit();
+  document.getElementById("axisDepart").value="";
+  document.getElementById("axisArrivee").value="";
+  document.getElementById("axisMin").value="";
+  if(goExists || backExists) alert("Axe ajouté partiellement : le doublon existant n’a pas été recréé.");
+}
+function openAxisEdit(id,x){
+  editingAxisId=id;
+  document.getElementById("editDepart").value=x.depart||"";
+  document.getElementById("editArrivee").value=x.arrivee||"";
+  document.getElementById("editMin").value=x.min||200;
+  document.getElementById("editAxisBox").style.display="block";
+  document.getElementById("editAxisBox").scrollIntoView({behavior:"smooth",block:"center"});
+}
+function cancelAxisEdit(){
+  editingAxisId=null;
+  document.getElementById("editAxisBox").style.display="none";
+}
+function saveAxisEdit(){
+  if(!editingAxisId)return;
+  var depart=normalizePlace(document.getElementById("editDepart").value);
+  var arrivee=normalizePlace(document.getElementById("editArrivee").value);
+  var min=Number(document.getElementById("editMin").value||200);
+  if(!depart||!arrivee)return alert("Départ et arrivée obligatoires.");
+  db.collection("groupage_axes").doc(editingAxisId).update({
+    depart:depart,
+    arrivee:arrivee,
+    name:buildAxisName(depart,arrivee),
+    min:min,
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(cancelAxisEdit);
+}
+function moveAxis(id,direction,currentOrder,rows){
+  rows=rows.slice().sort(axisSort);
+  var currentIndex=rows.findIndex(function(r){return r.id===id});
+  var targetIndex=currentIndex+direction;
+  if(currentIndex<0||targetIndex<0||targetIndex>=rows.length)return;
+  var current=rows[currentIndex];
+  var target=rows[targetIndex];
+  var currentO=Number(current.data.order==null?currentIndex+1:current.data.order);
+  var targetO=Number(target.data.order==null?targetIndex+1:target.data.order);
+  if(currentO===targetO){
+    currentO=currentIndex+1;
+    targetO=targetIndex+1;
+  }
+  var batch=db.batch();
+  batch.update(db.collection("groupage_axes").doc(current.id),{order:targetO,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  batch.update(db.collection("groupage_axes").doc(target.id),{order:currentO,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  batch.commit();
+}
+function toggleAxis(id,state){
+  db.collection("groupage_axes").doc(id).update({active:state,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+}
+function deleteAxis(id){
+  if(confirm("Supprimer cet axe ?")) db.collection("groupage_axes").doc(id).delete();
+}
+
+render();startFirebaseAdmin();startAxesAdmin();
 </script>
 </body></html>
