@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V12.3 Stable</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V12</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -27,7 +27,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </style></head>
 <body>
 <div class="app">
-<div class="badge">DISPATCH V12.3 Stable</div>
+<div class="badge">DISPATCH V12</div>
 <h1>TACLAR Dispatch</h1>
 <div class="subtitle">Suivi opérationnel — Groupage</div>
 
@@ -87,26 +87,11 @@ function startFirebaseDispatch(){
     });
   }catch(e){console.log("firebase dispatch error",e)}
 }
-
-function uniqueDispatchRows(rows){
-  var map={};
-  rows.forEach(function(r){
-    var key=(r.sessionId||"")+"|"+(r.plate||"")+"|"+(r.driver||"")+"|"+(r.start||"");
-    if(!map[key]) map[key]=r;
-    else{
-      var existing=map[key];
-      if(existing.status==="closed" && r.status!=="closed") map[key]=r;
-      else if((r.updated||"")>(existing.updated||"")) map[key]=r;
-    }
-  });
-  return Object.values(map);
-}
-
 function getRows(){
   if(cloudLiveRows && cloudLiveRows.length){
-    return uniqueDispatchRows(cloudLiveRows.map(function(x,i){
+    return cloudLiveRows.map(function(x,i){
       return {
-        source:"cloud-"+(x.sessionId||i),sessionId:x.sessionId||"",
+        source:"cloud-"+(x.sessionId||i),
         plate:x.plate||"---",
         driver:x.driver||"---",
         route:x.route||"---",
@@ -120,7 +105,7 @@ function getRows(){
         incident:x.incident||null,
         updated:x.updatedAtLocal||""
       }
-    }));
+    });
   }
   var rows=[];
   try{
@@ -131,7 +116,7 @@ function getRows(){
     var sessions=JSON.parse(localStorage.getItem('taclar_sessions')||'[]');
     sessions.forEach(function(s,i){rows.push({source:'session-'+i,plate:s.plate||'---',driver:s.driver||'---',route:s.route||'---',status:'closed',onboard:0,free:4,start:s.start||'--:--',end:s.end||s.time||'--:--',duration:s.duration||'--',last:'Session clôturée',incident:(s.incidents&&s.incidents.length)?s.incidents[s.incidents.length-1]:null,updated:s.end||s.time||''})});
   }catch(e){}
-  return uniqueDispatchRows(rows);
+  return rows;
 }
 function render(){
   var rowsEl=document.getElementById('rows'); var hidden=getHidden();
@@ -169,20 +154,6 @@ function showDetail(i){
   document.getElementById('detailModal').style.display='flex';
 }
 function closeDetail(){document.getElementById('detailModal').style.display='none'}
-
-async function deleteLiveAll(){
-  var total=0;
-  while(true){
-    var snap=await db.collection("groupage_live").limit(400).get();
-    if(snap.empty)break;
-    var batch=db.batch();
-    snap.forEach(function(doc){batch.delete(doc.ref);total++;});
-    await batch.commit();
-    if(snap.size<400)break;
-  }
-  return total;
-}
-
 function clearDispatch(){if(confirm('Effacer le dernier statut dispatch et les lignes masquées ?')){localStorage.removeItem('taclar_live');localStorage.removeItem('taclar_dispatch_hidden');render();}}
 render();startFirebaseDispatch();setInterval(render,3000);
 </script>
