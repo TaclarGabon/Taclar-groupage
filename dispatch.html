@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V12.3.1</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V12.3.2</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -27,13 +27,13 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </style></head>
 <body>
 <div class="app">
-<div class="badge">DISPATCH V12.3.1</div>
+<div class="badge">DISPATCH V12.3.2</div>
 <h1>TACLAR Dispatch</h1>
 <div class="subtitle">Suivi opérationnel — Groupage</div>
 
 <div class="card">
 <button onclick="render()">Actualiser</button>
-<button class="btn-red" onclick="clearDispatch()">Effacer statut dispatch</button>
+<button class="btn-red" onclick="hardClearDispatch()">Effacer statut dispatch</button>
 <p class="muted">Aucun montant n’est affiché ici.</p>
 </div>
 
@@ -89,7 +89,7 @@ function startFirebaseDispatch(){
 }
 function getRows(){
   if(cloudLiveRows && cloudLiveRows.length){
-    return cloudLiveRows.map(function(x,i){
+    return cloudLiveRows.filter(function(x){return x.status!=="closed" && x.status!=="Terminé";}).map(function(x,i){
       return {
         source:"cloud-"+(x.sessionId||i),
         plate:x.plate||"---",
@@ -118,6 +118,26 @@ function getRows(){
   }catch(e){}
   return rows;
 }
+
+async function hardClearDispatch(){
+  if(!confirm("Effacer tous les anciens statuts dispatch ?"))return;
+  try{
+    localStorage.removeItem("taclar_live");
+    localStorage.removeItem("taclar_dispatch_hidden");
+    if(typeof db!=="undefined"){
+      var snap=await db.collection("groupage_live").get();
+      var batch=db.batch();
+      snap.forEach(function(doc){ batch.delete(doc.ref); });
+      await batch.commit();
+    }
+    alert("Statuts dispatch effacés.");
+    location.reload();
+  }catch(e){
+    console.log("hardClearDispatch error",e);
+    alert("Erreur pendant l'effacement dispatch.");
+  }
+}
+
 function render(){
   var rowsEl=document.getElementById('rows'); var hidden=getHidden();
   currentRows=getRows().filter(function(r){return hidden.indexOf(rowId(r))===-1});
