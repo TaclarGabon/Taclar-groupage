@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.3.5</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.3.6</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -53,11 +53,44 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
   display:none!important;height:0!important;min-height:0!important;padding:0!important;margin:0!important;overflow:hidden!important;
 }
 
+
+/* V12.3.6 Admin compact */
+#sectionReport,
+#sectionAxes,
+#sectionDrivers{
+  width:100%;
+  max-width:none;
+  box-sizing:border-box;
+  margin-top:10px!important;
+  margin-bottom:0!important;
+}
+#sectionReport + #sectionAxes,
+#sectionReport + #sectionDrivers,
+#sectionDrivers + #sectionAxes{
+  margin-top:10px!important;
+}
+#axesBody:not(.open),
+#driversBody:not(.open),
+#reportBody:not(.open){
+  display:none!important;
+  height:0!important;
+  min-height:0!important;
+  max-height:0!important;
+  padding:0!important;
+  margin:0!important;
+  overflow:hidden!important;
+}
+.card:has(#axesBody:not(.open)),
+.card:has(#driversBody:not(.open)),
+.card:has(#reportBody:not(.open)){
+  padding-bottom:0!important;
+}
+
 </style></head>
 <body>
 <p class="muted"><b>Base saine V12.3.1 :</b> gestion PIN/chauffeur automatique mise en pause. Chauffeur = saisie manuelle.</p>
 <div class="app">
-<div class="badge">ADMIN V12.3.5</div>
+<div class="badge">ADMIN V12.3.6</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 
@@ -90,6 +123,9 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 </div>
+
+
+
 
 <div class="card" id="sectionReport">
 <div class="accordionHead" onclick="toggleAccordion('reportBody','reportIcon')"><h2>Rapport des sessions</h2><span class="accordionIcon" id="reportIcon">▼</span></div>
