@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.3.1</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.3.2</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -40,11 +40,18 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 .accordionBody{display:none;margin-top:14px}
 .accordionBody.open{display:block}
 
+
+#adminSections{display:flex;flex-direction:column;gap:14px;width:100%}
+#adminSections .card{width:100%;max-width:none;box-sizing:border-box;margin-top:0}
+.accordionBody{display:none;min-height:0!important;padding-top:0}
+.accordionBody.open{display:block}
+#axesBody:not(.open), #driversBody:not(.open), #reportBody:not(.open){height:0!important;min-height:0!important;padding:0!important;margin:0!important;overflow:hidden!important}
+
 </style></head>
 <body>
 <p class="muted"><b>Base saine V12.3.1 :</b> gestion PIN/chauffeur automatique mise en pause. Chauffeur = saisie manuelle.</p>
 <div class="app">
-<div class="badge">ADMIN V12.3.1</div>
+<div class="badge">ADMIN V12.3.2</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 
@@ -63,7 +70,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 
 
 
-<div class="card">
+<div class="card" id="sectionAxes">
 <div class="accordionHead" onclick="toggleAccordion('axesBody','axesIcon')"><h2>Gestion des axes</h2><span class="accordionIcon" id="axesIcon">▶</span></div>
 <div class="accordionBody" id="axesBody">
 <p class="muted">Ajoute un départ et une arrivée. TACLAR crée automatiquement l’aller et le retour.</p>
@@ -92,7 +99,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 
 </div>
 </div>
-<div class="card">
+<div class="card" id="sectionReport">
 <div class="accordionHead" onclick="toggleAccordion('reportBody','reportIcon')"><h2>Rapport des sessions</h2><span class="accordionIcon" id="reportIcon">▼</span></div>
 <div class="accordionBody open" id="reportBody">
 <table>
@@ -276,6 +283,23 @@ async function clearData(){
 
 var editingAxisId=null;
 
+
+
+function reorderAdminBlocks(){
+  var report=document.getElementById("sectionReport");
+  var drivers=document.getElementById("sectionDrivers");
+  var axes=document.getElementById("sectionAxes");
+  if(!report||!drivers||!axes)return;
+  var wrap=document.getElementById("adminSections");
+  if(!wrap){
+    wrap=document.createElement("div");
+    wrap.id="adminSections";
+    report.parentNode.insertBefore(wrap, report);
+  }
+  wrap.appendChild(report);
+  wrap.appendChild(drivers);
+  wrap.appendChild(axes);
+}
 
 function toggleAccordion(bodyId,iconId){
   var body=document.getElementById(bodyId);
@@ -509,6 +533,6 @@ function deleteAxis(id){
   if(confirm("Supprimer cet axe ?")) db.collection("groupage_axes").doc(id).delete();
 }
 
-render();startFirebaseAdmin();startAxesAdmin();
+reorderAdminBlocks();render();startFirebaseAdmin();startAxesAdmin();
 </script>
 </body></html>
