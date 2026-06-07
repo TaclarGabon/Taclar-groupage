@@ -1,6 +1,7 @@
 <!DOCTYPE html>
+
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.3.7</title><style>
+<head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1.0" name="viewport"/><title>TACLAR Admin V12.3.8</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -54,19 +55,9 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 }
 
 
-/* V12.3.7 safe admin compact */
-#sectionReport,
-#sectionAxes,
-#sectionDrivers{
-  margin-top:10px!important;
-  margin-bottom:0!important;
-  width:100%!important;
-  max-width:none!important;
-  box-sizing:border-box!important;
-}
-#axesBody:not(.open),
-#driversBody:not(.open),
-#reportBody:not(.open){
+/* V12.3.8 admin no-gap */
+.card{margin-bottom:12px;}
+.accordionBody:not(.open){
   display:none!important;
   height:0!important;
   min-height:0!important;
@@ -75,45 +66,23 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
   margin:0!important;
   overflow:hidden!important;
 }
-
 </style></head>
 <body>
+
 <div class="app">
-<div class="badge">ADMIN V12.3.7</div>
+<div class="badge">ADMIN V12.3.8</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
-
 <div class="card">
 <button onclick="render()">Actualiser</button>
 <button class="btn-red" onclick="clearData()">Effacer rapports test</button>
 </div>
-
 <div class="summary">
 <div class="box"><small>Sessions</small><strong id="sCount">0</strong></div>
 <div class="box"><small>Passagers</small><strong id="pCount">0</strong></div>
 <div class="box"><small>Montant</small><strong id="tSum">0 FCFA</strong></div>
 <div class="box"><small>Comm. TACLAR</small><strong id="cSum">0 FCFA</strong></div>
-</div>
-
-
-
-
-
-</div>
-
-
-<div class="modal-bg" id="detailModal"><div class="modal">
-<h2>Détail session</h2>
-<div id="detailContent"></div>
-<button class="btn-dark" onclick="closeDetail()">Fermer</button>
-</div></div>
-
-
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-</div>
-
-<div class="card" id="sectionReport">
+</div><div class="card" id="sectionReport">
 <div class="accordionHead" onclick="toggleAccordion('reportBody','reportIcon')"><h2>Rapport des sessions</h2><span class="accordionIcon" id="reportIcon">▼</span></div>
 <div class="accordionBody open" id="reportBody">
 <table>
@@ -123,35 +92,41 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 <tbody id="rows"></tbody>
 </table>
 </div>
-</div>
-<div class="card" id="sectionAxes">
+</div><div class="card" id="sectionAxes">
 <div class="accordionHead" onclick="toggleAccordion('axesBody','axesIcon')"><h2>Gestion des axes</h2><span class="accordionIcon" id="axesIcon">▶</span></div>
 <div class="accordionBody" id="axesBody">
 <p class="muted">Ajoute un départ et une arrivée. TACLAR crée automatiquement l’aller et le retour.</p>
-
 <div class="axisGrid">
-<input id="axisDepart" placeholder="Départ ex : Okala" style="letter-spacing:0;text-align:left">
-<input id="axisArrivee" placeholder="Arrivée ex : Aéroport" style="letter-spacing:0;text-align:left">
-<input id="axisMin" placeholder="Min. ex : 200" type="number" style="letter-spacing:0;text-align:left">
+<input id="axisDepart" placeholder="Départ ex : Okala" style="letter-spacing:0;text-align:left"/>
+<input id="axisArrivee" placeholder="Arrivée ex : Aéroport" style="letter-spacing:0;text-align:left"/>
+<input id="axisMin" placeholder="Min. ex : 200" style="letter-spacing:0;text-align:left" type="number"/>
 <button onclick="addAxis()">Ajouter aller-retour</button>
 </div>
-
 <div class="editBox" id="editAxisBox">
 <h3>Modifier axe</h3>
 <div class="editGrid">
-<input id="editDepart" placeholder="Départ" style="letter-spacing:0;text-align:left">
-<input id="editArrivee" placeholder="Arrivée" style="letter-spacing:0;text-align:left">
-<input id="editMin" placeholder="Min." type="number" style="letter-spacing:0;text-align:left">
+<input id="editDepart" placeholder="Départ" style="letter-spacing:0;text-align:left"/>
+<input id="editArrivee" placeholder="Arrivée" style="letter-spacing:0;text-align:left"/>
+<input id="editMin" placeholder="Min." style="letter-spacing:0;text-align:left" type="number"/>
 </div>
-<br>
+<br/>
 <button onclick="saveAxisEdit()">Enregistrer</button>
 <button class="btn-dark" onclick="cancelAxisEdit()">Annuler</button>
 </div>
-
 <div class="axisList" id="axisList"></div>
 </div>
-
 </div>
+</div>
+<div class="modal-bg" id="detailModal"><div class="modal">
+<h2>Détail session</h2>
+<div id="detailContent"></div>
+<button class="btn-dark" onclick="closeDetail()">Fermer</button>
+</div></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+
+
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyC_JNVVGrd2whXRGfHuOlShhmZfaLQFLfw",
@@ -164,7 +139,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 </script>
-
 <script>
 var currentSessions=[];
 function money(n){return String(n||0).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' FCFA'}
