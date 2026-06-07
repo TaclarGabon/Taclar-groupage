@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.2.15</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Admin V12.2.16</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -49,10 +49,17 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 .driverEditBox{display:none;background:rgba(94,234,212,.08);border:1px solid rgba(94,234,212,.30);border-radius:14px;padding:10px;margin-top:10px}
 @media(max-width:800px){.driverGrid,.driverRow{grid-template-columns:1fr}.driverActions{justify-content:flex-start}}
 
+
+.adminWide{width:100%;max-width:none;box-sizing:border-box}
+#adminSections{display:flex;flex-direction:column;gap:14px;width:100%}
+#sectionReport{order:1}
+#sectionDrivers{order:2}
+#sectionAxes{order:3}
+
 </style></head>
 <body>
 <div class="app">
-<div class="badge">ADMIN V12.2.15</div>
+<div class="badge">ADMIN V12.2.16</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 
@@ -71,7 +78,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 
 
 
-<div class="card">
+<div class="card adminWide" id="sectionAxes">
 <div class="accordionHead" onclick="toggleAccordion('axesBody','axesIcon')"><h2>Gestion des axes</h2><span class="accordionIcon" id="axesIcon">▶</span></div>
 <div class="accordionBody" id="axesBody">
 <p class="muted">Ajoute un départ et une arrivée. TACLAR crée automatiquement l’aller et le retour.</p>
@@ -101,7 +108,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </div>
 </div>
 
-<div class="card">
+<div class="card adminWide" id="sectionDrivers">
 <div class="accordionHead" onclick="toggleAccordion('driversBody','driversIcon')"><h2>Gestion des chauffeurs</h2><span class="accordionIcon" id="driversIcon">▶</span></div>
 <div class="accordionBody" id="driversBody">
 <p class="muted"><b>Note :</b> Chauffeur reste en saisie manuelle stable. La vérification PIN Firebase sera reprise plus tard avec la connexion sécurisée.</p>
@@ -132,7 +139,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </div>
 </div>
 
-<div class="card">
+<div class="card adminWide" id="sectionReport">
 <div class="accordionHead" onclick="toggleAccordion('reportBody','reportIcon')"><h2>Rapport des sessions</h2><span class="accordionIcon" id="reportIcon">▼</span></div>
 <div class="accordionBody open" id="reportBody">
 <table>
@@ -316,6 +323,23 @@ async function clearData(){
 
 var editingAxisId=null;
 
+
+
+function reorderAdminSections(){
+  var report=document.getElementById("sectionReport");
+  var drivers=document.getElementById("sectionDrivers");
+  var axes=document.getElementById("sectionAxes");
+  if(!report||!drivers||!axes)return;
+  var wrap=document.getElementById("adminSections");
+  if(!wrap){
+    wrap=document.createElement("div");
+    wrap.id="adminSections";
+    report.parentNode.insertBefore(wrap, report);
+  }
+  wrap.appendChild(report);
+  wrap.appendChild(drivers);
+  wrap.appendChild(axes);
+}
 
 function toggleAccordion(bodyId,iconId){
   var body=document.getElementById(bodyId);
@@ -658,6 +682,6 @@ function deleteDriver(id){
 }
 
 
-render();startFirebaseAdmin();startDriversAdmin();startAxesAdmin();
+reorderAdminSections();render();startFirebaseAdmin();startDriversAdmin();startAxesAdmin();
 </script>
 </body></html>
