@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V12.3.9.2</title><style>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V12.3.9.3</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:430px;margin:auto;padding:10px;min-height:100vh}
@@ -59,9 +59,31 @@ border:1px solid rgba(255,255,255,.18)
 .summary{margin-bottom:8px}
 .card{margin-bottom:8px}
 
+
+/* V12.3.9.3 - saisie caisse au clavier */
+.cashManualInput{
+  width:100%;
+  padding:12px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.18);
+  background:#061416;
+  color:white;
+  font-size:22px;
+  font-weight:bold;
+  text-align:center;
+  margin:8px 0 10px 0;
+}
+.cashHint{
+  color:#9ca3af;
+  font-size:12px;
+  text-align:center;
+  margin-top:-4px;
+  margin-bottom:8px;
+}
+
 </style></head>
 <body><div class="app">
-<div class="badge">V12.3.9.2</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div><div class="resumeBox" id="resumeBox"><b>Session active détectée</b><div id="resumeText"></div><button id="resumeBtn">Reprendre session</button><button class="btn-red" id="discardResumeBtn">Nouvelle session</button></div>
+<div class="badge">V12.3.9.3</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div><div class="resumeBox" id="resumeBox"><b>Session active détectée</b><div id="resumeText"></div><button id="resumeBtn">Reprendre session</button><button class="btn-red" id="discardResumeBtn">Nouvelle session</button></div>
 <div class="card" id="startupCard"><div class="grid2"><div><label>Axe</label><select id="route"><option>Okala → Aéroport</option><option>Akanda → Centre-ville</option><option>Nzeng-Ayong → Aéroport</option><option>Charbonnages → Louis</option><option>Owendo → Centre-ville</option><option>Sans axe fixe</option></select></div><div><label>Type véhicule</label><select id="vehicleType"><option value="4">Corolla - 4 places</option></select></div></div><br><label>Plaque véhicule</label><input id="plateInput" placeholder="Ex : LBV-1234"><br><br><label>Nom chauffeur</label><input id="driverNameInput" placeholder="Ex : Paul"><br><br><label>PIN chauffeur</label><input id="driverPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="1234"><br><br><button id="startBtn">Démarrer la session</button></div>
 <div id="serviceBanner" class="serviceBanner">🟢 EN SERVICE</div>
 <div class="summary"><div class="box"><small>À bord</small><strong><span id="onboard">0</span>/4</strong></div><div class="box"><small>Places libres</small><strong class="green" id="freeSeats">4</strong></div></div>
@@ -80,6 +102,8 @@ border:1px solid rgba(255,255,255,.18)
 <div class="box"><small>Montant app</small><strong id="cashExpected">0 FCFA</strong></div>
 <label>Cash réel</label>
 <div class="cashDisplay" id="cashTyped">0 FCFA</div>
+<input id="cashManualInput" class="cashManualInput" type="number" inputmode="numeric" placeholder="Taper le montant ici">
+<div class="cashHint">Tu peux taper au clavier ou utiliser les boutons ci-dessous.</div>
 <div class="keypad">
 <button class="numKey" data-n="1">1</button><button class="numKey" data-n="2">2</button><button class="numKey" data-n="3">3</button>
 <button class="numKey" data-n="4">4</button><button class="numKey" data-n="5">5</button><button class="numKey" data-n="6">6</button>
@@ -381,6 +405,16 @@ setDrivingMode(false);
 hidePanels();render();
 }
 
+
+function setCashValue(v){
+  v=String(v||"").replace(/[^\d]/g,"");
+  v=v.replace(/^0+/,"");
+  cashInput=v;
+  var n=Number(cashInput||"0");
+  if(el("cashTyped"))el("cashTyped").textContent=money(n);
+  if(el("cashManualInput") && el("cashManualInput").value!==cashInput)el("cashManualInput").value=cashInput;
+}
+
 function closeSession(){
 if(!active)return alert("Aucune session active.");
 if(countOnboard()>0)return alert("Sièges occupés.\nLibérez les sièges avant clôture.");
@@ -396,8 +430,9 @@ if(descendedCount===0){
 
 cashInput="";
 el("cashExpected").textContent=money(totalAmount());
-el("cashTyped").textContent=money(0);
+setCashValue("");
 el("cashModal").style.display="flex";
+setTimeout(function(){try{el("cashManualInput").focus()}catch(e){}},150);
 }
 
 function minutesBetween(start,end){
@@ -451,11 +486,13 @@ el("customIncidentCancel").onclick=()=>{el("customIncidentModal").style.display=
 startAxesListener();
 showResumeIfAny();
 
-document.querySelectorAll(".numKey").forEach(b=>b.onclick=()=>{cashInput+=b.dataset.n;cashInput=cashInput.replace(/^0+/,"");if(cashInput==="")cashInput="0";el("cashTyped").textContent=money(Number(cashInput))});
-el("cashClear").onclick=()=>{cashInput="";el("cashTyped").textContent=money(0)};el("cashBack").onclick=()=>{cashInput=String(cashInput||"").slice(0,-1);el("cashTyped").textContent=money(Number(cashInput||"0"))};
+document.querySelectorAll(".numKey").forEach(b=>b.onclick=()=>{setCashValue(String(cashInput||"")+b.dataset.n)});
+el("cashClear").onclick=()=>{setCashValue("")};el("cashBack").onclick=()=>{setCashValue(String(cashInput||"").slice(0,-1))};
 el("cashCancel").onclick=()=>{el("cashModal").style.display="none"};
+el("cashManualInput").oninput=function(){setCashValue(this.value)};
+el("cashManualInput").onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();el("cashOk").click();}};
 el("cashOk").onclick=()=>{var expected=totalAmount();var real=Number(cashInput||"0");pendingCash=real;pendingGap=expected-real;if(real===expected){el("cashModal").style.display="none";completeClose("",real,0)}else{el("cashModal").style.display="none";el("gapText").textContent="Écart caisse : "+money(Math.abs(pendingGap))+(pendingGap>0?" manquant":" en plus");el("gapModal").style.display="flex"}};
-el("gapCorrect").onclick=()=>{el("gapModal").style.display="none";cashInput="";el("cashTyped").textContent=money(0);el("cashModal").style.display="flex"};
+el("gapCorrect").onclick=()=>{el("gapModal").style.display="none";setCashValue("");el("cashModal").style.display="flex";setTimeout(function(){try{el("cashManualInput").focus()}catch(e){}},150)};
 el("gapJustify").onclick=()=>{el("gapModal").style.display="none";el("reasonModal").style.display="flex"};
 document.querySelectorAll(".reasonChoice").forEach(b=>b.onclick=()=>{el("reasonModal").style.display="none";completeClose(b.dataset.reason,pendingCash,pendingGap)});
 el("reasonCancel").onclick=()=>{el("reasonModal").style.display="none";el("gapModal").style.display="flex"};
