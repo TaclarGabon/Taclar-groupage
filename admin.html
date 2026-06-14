@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 
 <html lang="fr">
-<head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1.0" name="viewport"/><title>TACLAR Admin V12.5.1</title><style>
+<head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1.0" name="viewport"/><title>TACLAR Admin V12.5.2</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -69,16 +69,16 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 
 /* V12.5.1 admin polish */
 .tableWrap{width:100%;overflow-x:auto}
-table{min-width:1040px;font-size:12px}
+table{min-width:1000px;font-size:11px}
 th,td{word-break:break-word;line-height:1.12}
-.actionCell{min-width:104px;text-align:center}
-.actionCell button{width:98px;min-height:38px;font-size:12px;padding:6px 6px;margin:2px 0}
+.actionCell{min-width:118px;max-width:118px;text-align:center;white-space:normal}
+.actionCell button{width:104px;min-height:36px;font-size:11px;padding:5px 5px;margin:2px 0;line-height:1.05}
 .excelStatus{font-weight:bold;font-size:12px}
 </style></head>
 <body>
 
 <div class="app">
-<div class="badge">ADMIN V12.5.1</div>
+<div class="badge">ADMIN V12.5.2</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 <div class="card">
@@ -151,6 +151,8 @@ const db = firebase.firestore();
 <script>
 var currentSessions=[];
 function money(n){return String(n||0).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' FCFA'}
+function calcCommission(total){return Math.round(Number(total||0)*0.25)}
+function calcNet(total){return Number(total||0)-calcCommission(total)}
 function getSessions(){try{return JSON.parse(localStorage.getItem('taclar_sessions')||'[]')}catch(e){return []}}
 function saveSessions(s){localStorage.setItem('taclar_sessions',JSON.stringify(s))}
 function getExcelArchive(){try{return JSON.parse(localStorage.getItem('taclar_excel_archive')||'[]')}catch(e){return []}}
@@ -196,7 +198,10 @@ function ensureSessionIds(sessions){
     var x=item.x, key=item.key;
     counters[key]=(counters[key]||0)+1;
     var id='TAC-'+key+'-'+String(counters[key]).padStart(3,'0');
-    if(!x.taclarSessionId || !/^TAC-\d{8}-\d{3}$/.test(String(x.taclarSessionId))){x.taclarSessionId=id;}
+    x.taclarSessionId=id;
+    x.date=formatDateFR(x);
+    x.commission=calcCommission(x.total);
+    x.net=calcNet(x.total);
   });
   return sessions;
 }
@@ -205,7 +210,7 @@ function excelStatus(x){return x.excelSaved?"🟢 Sauvegardé":"🟡 En attente"
 function csvEscape(v){v=String(v==null?"":v); if(/[",\n;]/.test(v))return '"'+v.replace(/"/g,'""')+'"'; return v;}
 function archiveRow(x,i){return {
   id:sessionOfficialId(x,i), date:formatDateFR(x), driver:x.driver||'', plate:x.plate||'', route:x.route||'', start:x.start||'', end:x.end||x.time||'', duration:normalizeDuration(x), passengers:x.passengers||0,
-  total:x.total||0, commission:x.commission||0, net:x.net||0, closureReason:x.closureReason||'Non précisé', observations:x.justification||''
+  total:x.total||0, commission:calcCommission(x.total), net:calcNet(x.total), closureReason:x.closureReason||'Non précisé', observations:x.justification||''
 }}
 function archiveSession(i){
   var sessions=ensureSessionIds(getSessions()); var x=sessions[i]; if(!x)return;
@@ -221,25 +226,69 @@ async function updateSessionFirebaseExcel(session){
     await db.collection("groupage_sessions").doc(String(session.sessionId).replace(/[^a-zA-Z0-9_-]/g,"_")).set({taclarSessionId:session.taclarSessionId,excelSaved:true,excelSavedAt:session.excelSavedAt},{merge:true});
   }catch(e){console.log("updateSessionFirebaseExcel error",e)}
 }
+function xmlCell(value,style,type){
+  value=(value==null?"":String(value)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  var t=type||"String";
+  return '<Cell'+(style?' ss:StyleID="'+style+'"':'')+'><Data ss:Type="'+t+'">'+value+'</Data></Cell>';
+}
+function buildSummaryRows(archive){
+  var map={};
+  archive.forEach(function(r){
+    var jour=r.date||"";
+    if(!map[jour])map[jour]={date:jour,total:0,commission:0,count:0};
+    map[jour].total+=Number(r.total||0);
+    map[jour].commission+=Number(r.commission||0);
+    map[jour].count+=1;
+  });
+  return Object.keys(map).sort(function(a,b){
+    var pa=a.split('/').reverse().join(''), pb=b.split('/').reverse().join(''); return pa.localeCompare(pb);
+  }).map(function(k){return map[k]});
+}
 function downloadExcelArchive(){
   var archive=getExcelArchive();
   if(archive.length===0){alert("Aucune session sauvegardée dans le registre Excel.");return;}
-  var rows=archive.map(function(r){
-    return '<tr>'+[
-      r.id,r.date,r.driver,r.plate,r.route,r.start,r.end,(r.duration||''),r.passengers,r.total,r.commission,r.net,r.closureReason,r.observations
-    ].map(function(v){return '<td>'+String(v==null?'':v).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})+'</td>';}).join('')+'</tr>';
+  archive=archive.map(function(r){
+    var total=Number(r.total||0);
+    r.commission=calcCommission(total);
+    r.net=calcNet(total);
+    return r;
+  });
+  var summary=buildSummaryRows(archive);
+  var sessionRows=archive.map(function(r){
+    return '<Row>'+[
+      xmlCell(r.id,'Data'),xmlCell(r.date,'Data'),xmlCell(r.driver,'Data'),xmlCell(r.plate,'Data'),xmlCell(r.route,'Data'),
+      xmlCell(r.start,'Data'),xmlCell(r.end,'Data'),xmlCell(r.duration||'','Data'),xmlCell(r.passengers,'DataNum','Number'),
+      xmlCell(r.total,'DataNum','Number'),xmlCell(r.commission,'DataNum','Number'),xmlCell(r.net,'DataNum','Number'),
+      xmlCell(r.closureReason,'Data'),xmlCell(r.observations,'Data')
+    ].join('')+'</Row>';
   }).join('');
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'+ 
-    'body{font-family:Arial,Helvetica,sans-serif;}'+
-    '.brand{font-size:28px;font-weight:900;color:#061416}.brand span{color:#14b8a6}.subtitle{font-size:14px;color:#666;margin-bottom:14px}'+
-    'table{border-collapse:collapse;width:100%;font-size:12px}th{background:#9dc3e6;color:#000;font-size:14px;font-weight:800;border:1px solid #000;padding:6px}td{border:1px solid #000;padding:5px}tr:nth-child(even) td{background:#f2f2f2}.num{text-align:right}'+
-    '</style></head><body>'+ 
-    '<div class="brand"><span>TAC</span>LAR</div><div class="subtitle">Registre officiel des sessions groupage</div>'+ 
-    '<table><thead><tr><th>ID Session</th><th>Date</th><th>Chauffeur</th><th>Plaque</th><th>Axe</th><th>Début</th><th>Fin</th><th>Durée</th><th>Passagers</th><th>Total</th><th>Commission</th><th>Net Chauffeur</th><th>Motif</th><th>Observations</th></tr></thead><tbody>'+rows+'</tbody></table>'+ 
-    '</body></html>';
-  var blob=new Blob(['﻿'+html],{type:'application/vnd.ms-excel;charset=utf-8;'});
+  var summaryRows=summary.map(function(r){
+    return '<Row>'+xmlCell(r.date,'Data')+xmlCell(r.count,'DataNum','Number')+xmlCell(r.total,'DataNum','Number')+xmlCell(r.commission,'DataNum','Number')+'</Row>';
+  }).join('');
+  var xml='<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>'+
+  '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">'+
+  '<Styles>'+ 
+  '<Style ss:ID="Title"><Font ss:Bold="1" ss:Size="20" ss:Color="#061416"/><Interior ss:Color="#5EEAD4" ss:Pattern="Solid"/></Style>'+ 
+  '<Style ss:ID="Sub"><Font ss:Bold="1" ss:Size="12" ss:Color="#111827"/><Interior ss:Color="#FACC15" ss:Pattern="Solid"/></Style>'+ 
+  '<Style ss:ID="Header"><Font ss:Bold="1" ss:Size="12"/><Interior ss:Color="#9DC3E6" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>'+ 
+  '<Style ss:ID="Data"><Font ss:Bold="1" ss:Size="10"/><Interior ss:Color="#D9D9D9" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>'+ 
+  '<Style ss:ID="DataNum"><Alignment ss:Horizontal="Right"/><Font ss:Bold="1" ss:Size="10"/><Interior ss:Color="#D9D9D9" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>'+ 
+  '</Styles>'+ 
+  '<Worksheet ss:Name="Résumé"><Table>'+ 
+  '<Column ss:Width="110"/><Column ss:Width="100"/><Column ss:Width="140"/><Column ss:Width="150"/>'+ 
+  '<Row><Cell ss:StyleID="Title" ss:MergeAcross="3"><Data ss:Type="String">TACLAR - Résumé journalier</Data></Cell></Row>'+ 
+  '<Row><Cell ss:StyleID="Sub" ss:MergeAcross="3"><Data ss:Type="String">Jour / Montant total / Commission TACLAR</Data></Cell></Row>'+ 
+  '<Row>'+xmlCell('Jour','Header')+xmlCell('Sessions','Header')+xmlCell('Montant total','Header')+xmlCell('Commission TACLAR','Header')+'</Row>'+summaryRows+'</Table></Worksheet>'+ 
+  '<Worksheet ss:Name="Sessions"><Table>'+ 
+  '<Column ss:Width="120"/><Column ss:Width="80"/><Column ss:Width="110"/><Column ss:Width="90"/><Column ss:Width="140"/><Column ss:Width="60"/><Column ss:Width="60"/><Column ss:Width="70"/><Column ss:Width="80"/><Column ss:Width="90"/><Column ss:Width="100"/><Column ss:Width="110"/><Column ss:Width="150"/><Column ss:Width="150"/>'+ 
+  '<Row><Cell ss:StyleID="Title" ss:MergeAcross="13"><Data ss:Type="String">TACLAR - Registre officiel des sessions groupage</Data></Cell></Row>'+ 
+  '<Row><Cell ss:StyleID="Sub" ss:MergeAcross="13"><Data ss:Type="String">Commission TACLAR : 25%</Data></Cell></Row>'+ 
+  '<Row>'+['ID Session','Date','Chauffeur','Plaque','Axe','Début','Fin','Durée','Passagers','Total','Commission','Net Chauffeur','Motif','Observations'].map(function(h){return xmlCell(h,'Header')}).join('')+'</Row>'+sessionRows+'</Table></Worksheet>'+ 
+  '</Workbook>';
+  var blob=new Blob([xml],{type:'application/vnd.ms-excel;charset=utf-8;'});
   var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='TACLAR_Registre_Excel_'+taclarDateKey(new Date())+'.xls'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
+
 
 
 function startFirebaseAdmin(){
@@ -267,7 +316,7 @@ function render(){
   if(s.length===0) rows.innerHTML='<tr><td colspan="17">Aucune session enregistrée.</td></tr>';
   s.slice().reverse().forEach(function(x,revIndex){
     var i=s.length-1-revIndex;
-    p+=Number(x.passengers||0); t+=Number(x.total||0); c+=Number(x.commission||0);
+    p+=Number(x.passengers||0); t+=Number(x.total||0); c+=calcCommission(x.total);
     var tr=document.createElement('tr');
     tr.innerHTML=
       '<td>'+(sessionOfficialId(x,i))+'</td>'+
@@ -281,8 +330,8 @@ function render(){
       '<td>'+money(paymentTotal(x,"Cash"))+'</td>'+
       '<td>'+money(paymentTotal(x,"Airtel Money"))+'</td>'+
       '<td>'+money(x.total)+'</td>'+
-      '<td>'+money(x.commission)+'</td>'+
-      '<td>'+money(x.net)+'</td>'+
+      '<td>'+money(calcCommission(x.total))+'</td>'+
+      '<td>'+money(calcNet(x.total))+'</td>'+
       '<td>'+(x.closureReason||'Non précisé')+'</td>'+
       '<td><span class="excelStatus">'+excelStatus(x)+'</span>'+(x.excelSavedAt?'<br><small>'+x.excelSavedAt+'</small>':'')+'</td>'+
       '<td>'+((x.incidents||[]).length)+'</td>'+
@@ -309,6 +358,8 @@ function showDetail(i){
   html+='<div class="detailBox"><b>Passagers :</b> '+(x.passengers||0)+'</div>';
   html+='<div class="detailBox"><b>Motif clôture :</b> '+(x.closureReason||'Non précisé')+'</div>';
   html+='<div class="detailBox"><b>Montant app :</b> '+money(x.total)+'</div>';
+  html+='<div class="detailBox"><b>Commission TACLAR 25% :</b> '+money(calcCommission(x.total))+'</div>';
+  html+='<div class="detailBox"><b>Net chauffeur :</b> '+money(calcNet(x.total))+'</div>';
   html+='<div class="detailBox"><b>Total Cash :</b> '+money(paymentTotal(x,"Cash"))+'</div>';
   html+='<div class="detailBox"><b>Total Airtel Money :</b> '+money(paymentTotal(x,"Airtel Money"))+'</div>';
   var det=(x.details||[]).filter(function(a){return a.status==="descendu"}).map(function(a){return (a.seat||"")+" - "+money(a.amount)+" - "+(a.payment||"Cash")}).join("<br>")||"Aucun détail";
