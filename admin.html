@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 
 <html lang="fr">
-<head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1.0" name="viewport"/><title>TACLAR Admin V12.5.0</title><style>
+<head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1.0" name="viewport"/><title>TACLAR Admin V12.5.1</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -66,11 +66,19 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
   margin:0!important;
   overflow:hidden!important;
 }
+
+/* V12.5.1 admin polish */
+.tableWrap{width:100%;overflow-x:auto}
+table{min-width:1040px;font-size:12px}
+th,td{word-break:break-word;line-height:1.12}
+.actionCell{min-width:104px;text-align:center}
+.actionCell button{width:98px;min-height:38px;font-size:12px;padding:6px 6px;margin:2px 0}
+.excelStatus{font-weight:bold;font-size:12px}
 </style></head>
 <body>
 
 <div class="app">
-<div class="badge">ADMIN V12.5.0</div>
+<div class="badge">ADMIN V12.5.1</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 <div class="card">
@@ -86,12 +94,12 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </div><div class="card" id="sectionReport">
 <div class="accordionHead" onclick="toggleAccordion('reportBody','reportIcon')"><h2>Rapport des sessions</h2><span class="accordionIcon" id="reportIcon">▼</span></div>
 <div class="accordionBody open" id="reportBody">
-<table>
+<div class="tableWrap"><table>
 <thead><tr>
 <th>ID Session</th><th>Date</th><th>Début</th><th>Fin</th><th>Durée</th><th>Chauffeur</th><th>Plaque</th><th>Pass.</th><th>Cash</th><th>Airtel</th><th>Montant</th><th>Comm.</th><th>Net</th><th>Motif clôture</th><th>Excel</th><th>Inc.</th><th>Action</th>
 </tr></thead>
 <tbody id="rows"></tbody>
-</table>
+</table></div>
 </div>
 </div><div class="card" id="sectionAxes">
 <div class="accordionHead" onclick="toggleAccordion('axesBody','axesIcon')"><h2>Gestion des axes</h2><span class="accordionIcon" id="axesIcon">▶</span></div>
@@ -148,24 +156,63 @@ function saveSessions(s){localStorage.setItem('taclar_sessions',JSON.stringify(s
 function getExcelArchive(){try{return JSON.parse(localStorage.getItem('taclar_excel_archive')||'[]')}catch(e){return []}}
 function saveExcelArchive(a){localStorage.setItem('taclar_excel_archive',JSON.stringify(a))}
 function taclarDateKey(d){return d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")}
-function taclarSessionCode(rawId){
-  if(String(rawId||"").indexOf("TAC-")===0)return rawId;
-  var digits=String(rawId||Date.now()).replace(/\D/g,"");
-  var seq=digits.slice(-3).padStart(3,"0");
-  return "TAC-"+taclarDateKey(new Date())+"-"+seq;
+function parseSessionDate(x){
+  var raw=String((x&&x.date)||"").trim();
+  if(raw){
+    var m=raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(m){
+      var a=Number(m[1]), b=Number(m[2]), y=Number(m[3]);
+      if(a>12)return new Date(y,b-1,a);
+      if(b>12)return new Date(y,a-1,b);
+      return new Date(y,a-1,b);
+    }
+    var d=new Date(raw); if(!isNaN(d))return d;
+  }
+  return new Date();
 }
-function sessionOfficialId(x,i){return x.taclarSessionId||taclarSessionCode(x.sessionId||i)}
+function formatDateFR(x){
+  var d=parseSessionDate(x);
+  return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+d.getFullYear();
+}
+function sessionDateKey(x){return taclarDateKey(parseSessionDate(x))}
+function timeToMinutes(t){var m=String(t||"").match(/(\d{1,2}):(\d{2})/);return m?Number(m[1])*60+Number(m[2]):0}
+function normalizeDuration(x){
+  if(x.duration && x.duration!=='--'){
+    var m=String(x.duration).match(/(\d+)/); if(m)return '00:'+String(Number(m[1])).padStart(2,'0');
+    return x.duration;
+  }
+  var start=timeToMinutes(x.start), end=timeToMinutes(x.end||x.time);
+  if(end<start)end+=24*60;
+  var diff=Math.max(0,end-start);
+  return String(Math.floor(diff/60)).padStart(2,'0')+':'+String(diff%60).padStart(2,'0');
+}
+function sortSessionsChrono(list){
+  return list.map(function(x,i){return {x:x,i:i,key:sessionDateKey(x),time:timeToMinutes(x.start)}})
+    .sort(function(a,b){return a.key.localeCompare(b.key)||a.time-b.time||a.i-b.i});
+}
+function ensureSessionIds(sessions){
+  var counters={};
+  sortSessionsChrono(sessions).forEach(function(item){
+    var x=item.x, key=item.key;
+    counters[key]=(counters[key]||0)+1;
+    var id='TAC-'+key+'-'+String(counters[key]).padStart(3,'0');
+    if(!x.taclarSessionId || !/^TAC-\d{8}-\d{3}$/.test(String(x.taclarSessionId))){x.taclarSessionId=id;}
+  });
+  return sessions;
+}
+function sessionOfficialId(x,i){return x.taclarSessionId||('TAC-'+sessionDateKey(x)+'-'+String((i||0)+1).padStart(3,'0'))}
 function excelStatus(x){return x.excelSaved?"🟢 Sauvegardé":"🟡 En attente"}
 function csvEscape(v){v=String(v==null?"":v); if(/[",\n;]/.test(v))return '"'+v.replace(/"/g,'""')+'"'; return v;}
 function archiveRow(x,i){return {
-  id:sessionOfficialId(x,i), date:x.date||'', driver:x.driver||'', plate:x.plate||'', route:x.route||'', start:x.start||'', end:x.end||x.time||'', passengers:x.passengers||0,
+  id:sessionOfficialId(x,i), date:formatDateFR(x), driver:x.driver||'', plate:x.plate||'', route:x.route||'', start:x.start||'', end:x.end||x.time||'', duration:normalizeDuration(x), passengers:x.passengers||0,
   total:x.total||0, commission:x.commission||0, net:x.net||0, closureReason:x.closureReason||'Non précisé', observations:x.justification||''
 }}
 function archiveSession(i){
-  var sessions=getSessions(); var x=sessions[i]; if(!x)return;
+  var sessions=ensureSessionIds(getSessions()); var x=sessions[i]; if(!x)return;
   var id=sessionOfficialId(x,i); var archive=getExcelArchive();
-  if(!archive.some(function(r){return r.id===id;})) archive.push(archiveRow(x,i));
-  x.taclarSessionId=id; x.excelSaved=true; x.excelSavedAt=new Date().toLocaleString();
+  var row=archiveRow(x,i);
+  if(!archive.some(function(r){return r.id===id;})) archive.push(row);
+  x.taclarSessionId=id; x.excelSaved=true; x.excelSavedAt=new Date().toLocaleString('fr-FR');
   sessions[i]=x; saveSessions(sessions); saveExcelArchive(archive); updateSessionFirebaseExcel(x);
   alert("Session sauvegardée dans le registre Excel : "+id); render();
 }
@@ -177,18 +224,30 @@ async function updateSessionFirebaseExcel(session){
 function downloadExcelArchive(){
   var archive=getExcelArchive();
   if(archive.length===0){alert("Aucune session sauvegardée dans le registre Excel.");return;}
-  var headers=["ID Session","Date","Chauffeur","Plaque","Axe","Début","Fin","Passagers","Total","Commission","Net Chauffeur","Motif","Observations"];
-  var lines=[headers.join(';')];
-  archive.forEach(function(r){lines.push([r.id,r.date,r.driver,r.plate,r.route,r.start,r.end,r.passengers,r.total,r.commission,r.net,r.closureReason,r.observations].map(csvEscape).join(';'));});
-  var blob=new Blob(["\ufeff"+lines.join("\n")],{type:"text/csv;charset=utf-8;"});
-  var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="TACLAR_Registre_Excel_"+taclarDateKey(new Date())+".csv"; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  var rows=archive.map(function(r){
+    return '<tr>'+[
+      r.id,r.date,r.driver,r.plate,r.route,r.start,r.end,(r.duration||''),r.passengers,r.total,r.commission,r.net,r.closureReason,r.observations
+    ].map(function(v){return '<td>'+String(v==null?'':v).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})+'</td>';}).join('')+'</tr>';
+  }).join('');
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'+ 
+    'body{font-family:Arial,Helvetica,sans-serif;}'+
+    '.brand{font-size:28px;font-weight:900;color:#061416}.brand span{color:#14b8a6}.subtitle{font-size:14px;color:#666;margin-bottom:14px}'+
+    'table{border-collapse:collapse;width:100%;font-size:12px}th{background:#9dc3e6;color:#000;font-size:14px;font-weight:800;border:1px solid #000;padding:6px}td{border:1px solid #000;padding:5px}tr:nth-child(even) td{background:#f2f2f2}.num{text-align:right}'+
+    '</style></head><body>'+ 
+    '<div class="brand"><span>TAC</span>LAR</div><div class="subtitle">Registre officiel des sessions groupage</div>'+ 
+    '<table><thead><tr><th>ID Session</th><th>Date</th><th>Chauffeur</th><th>Plaque</th><th>Axe</th><th>Début</th><th>Fin</th><th>Durée</th><th>Passagers</th><th>Total</th><th>Commission</th><th>Net Chauffeur</th><th>Motif</th><th>Observations</th></tr></thead><tbody>'+rows+'</tbody></table>'+ 
+    '</body></html>';
+  var blob=new Blob(['﻿'+html],{type:'application/vnd.ms-excel;charset=utf-8;'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='TACLAR_Registre_Excel_'+taclarDateKey(new Date())+'.xls'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
+
 
 function startFirebaseAdmin(){
   try{
     db.collection('groupage_sessions').orderBy('updatedAt','desc').onSnapshot(function(snapshot){
       var s=[];
       snapshot.forEach(function(doc){s.push(doc.data())});
+      s=ensureSessionIds(s);
       localStorage.setItem('taclar_sessions',JSON.stringify(s));
       render();
     });
@@ -202,7 +261,7 @@ function paymentTotal(x,mode){
   return total;
 }
 function render(){
-  var s=getSessions(); currentSessions=s;
+  var s=ensureSessionIds(getSessions()); saveSessions(s); currentSessions=s;
   var rows=document.getElementById('rows'); rows.innerHTML='';
   var p=0,t=0,c=0;
   if(s.length===0) rows.innerHTML='<tr><td colspan="17">Aucune session enregistrée.</td></tr>';
@@ -212,10 +271,10 @@ function render(){
     var tr=document.createElement('tr');
     tr.innerHTML=
       '<td>'+(sessionOfficialId(x,i))+'</td>'+
-      '<td>'+(x.date||'')+'</td>'+
+      '<td>'+formatDateFR(x)+'</td>'+
       '<td>'+(x.start||'--:--')+'</td>'+
       '<td>'+(x.end||x.time||'--:--')+'</td>'+
-      '<td>'+(x.duration||'--')+'</td>'+
+      '<td>'+normalizeDuration(x)+'</td>'+
       '<td>'+(x.driver||'---')+'</td>'+
       '<td><a href="#" onclick="showDetail('+i+')">'+(x.plate||'---')+'</a></td>'+
       '<td>'+(x.passengers||0)+'</td>'+
@@ -225,9 +284,9 @@ function render(){
       '<td>'+money(x.commission)+'</td>'+
       '<td>'+money(x.net)+'</td>'+
       '<td>'+(x.closureReason||'Non précisé')+'</td>'+
-      '<td>'+excelStatus(x)+(x.excelSavedAt?'<br><small>'+x.excelSavedAt+'</small>':'')+'</td>'+
+      '<td><span class="excelStatus">'+excelStatus(x)+'</span>'+(x.excelSavedAt?'<br><small>'+x.excelSavedAt+'</small>':'')+'</td>'+
       '<td>'+((x.incidents||[]).length)+'</td>'+
-      '<td>'+(!x.excelSaved?'<button onclick="archiveSession('+i+')">Sauvegarder Excel</button><br>':'')+'<button class="btn-red" onclick="deleteSession('+i+')">Supprimer</button></td>';
+      '<td class="actionCell">'+(!x.excelSaved?'<button onclick="archiveSession('+i+')">Sauvegarder Excel</button><br>':'')+'<button class="btn-red" onclick="deleteSession('+i+')">Supprimer</button></td>';
     rows.appendChild(tr);
   });
   document.getElementById('sCount').textContent=s.length;
