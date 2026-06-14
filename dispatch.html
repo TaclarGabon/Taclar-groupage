@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V12.4.0</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V12.5.0</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -27,12 +27,13 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </style></head>
 <body>
 <div class="app">
-<div class="badge">DISPATCH V12.4.0</div>
+<div class="badge">DISPATCH V12.5.0</div>
 <h1>TACLAR Dispatch</h1>
 <div class="subtitle">Suivi opérationnel — Groupage</div>
 
 <div class="card">
 <button onclick="render()">Actualiser</button>
+<button class="btn-dark" onclick="toggleHiddenBox()">📂 Sessions masquées</button>
 <button class="btn-red" onclick="hardClearDispatch()">Effacer statut dispatch</button>
 <p class="muted">Aucun montant n’est affiché ici.</p>
 </div>
@@ -41,10 +42,15 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 <h2>Chauffeurs groupage</h2>
 <table>
 <thead><tr>
-<th>Plaque</th><th>Chauffeur</th><th>Axe</th><th>Statut</th><th>À bord</th><th>Places</th><th>Début</th><th>Fin</th><th>Durée</th><th>Dernière info</th><th>Action</th>
+<th>ID</th><th>Plaque</th><th>Chauffeur</th><th>Axe</th><th>Statut</th><th>À bord</th><th>Places</th><th>Début</th><th>Fin</th><th>Durée</th><th>Dernière info</th><th>Action</th>
 </tr></thead>
 <tbody id="rows"></tbody>
 </table>
+</div>
+<div class="card" id="hiddenBox" style="display:none">
+<h2>Sessions masquées</h2>
+<p class="muted">Une session masquée n’est pas supprimée. Tu peux la réafficher ici.</p>
+<div id="hiddenRows" class="detailBox">Aucune session masquée.</div>
 </div>
 </div>
 
@@ -76,7 +82,15 @@ function statusFr(s){if(s==='service')return 'En service';if(s==='incident')retu
 function pill(s){if(s==='service')return '<span class="statuspill pillgreen">En service</span>';if(s==='incident')return '<span class="statuspill pillorange">Incident</span>';return '<span class="statuspill pillgray">Terminé</span>'}
 function getHidden(){try{return JSON.parse(localStorage.getItem('taclar_dispatch_hidden')||'[]')}catch(e){return []}}
 function setHidden(h){localStorage.setItem('taclar_dispatch_hidden',JSON.stringify(h))}
-function rowId(r){return [r.source||'',r.plate||'---',r.driver||'---',r.route||'---',r.start||'',r.end||'',r.updated||''].join('|')}
+function taclarDateKey(d){return d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")}
+function taclarSessionCode(rawId,dateText){
+  if(String(rawId||"").indexOf("TAC-")===0)return rawId;
+  var d=new Date();
+  var digits=String(rawId||Date.now()).replace(/\D/g,"");
+  var seq=digits.slice(-3).padStart(3,"0");
+  return "TAC-"+taclarDateKey(d)+"-"+seq;
+}
+function rowId(r){return [r.sessionId||'',r.source||'',r.plate||'---',r.driver||'---',r.route||'---',r.start||'',r.end||'',r.updated||''].join('|')}
 var cloudLiveRows=[];
 function startFirebaseDispatch(){
   try{
@@ -92,6 +106,8 @@ function getRows(){
     return cloudLiveRows.map(function(x,i){
       return {
         source:"cloud-"+(x.sessionId||i),
+        sessionId:x.sessionId||"",
+        taclarSessionId:x.taclarSessionId||taclarSessionCode(x.sessionId||i),
         plate:x.plate||"---",
         driver:x.driver||"---",
         route:x.route||"---",
@@ -111,11 +127,11 @@ function getRows(){
   var rows=[];
   try{
     var live=JSON.parse(localStorage.getItem('taclar_live')||'null');
-    if(live && live.status!=='closed') rows.push({source:'live',plate:live.vehicle||'---',driver:live.driver||'---',route:live.route||'---',status:live.status||'closed',onboard:Number(live.onboard||0),free:live.free==null?4:Number(live.free),start:live.start||'--:--',end:'--:--',duration:'En cours',last:live.last||'',incident:live.incident||null,updated:live.updated||''});
+    if(live && live.status!=='closed') rows.push({source:'live',sessionId:live.sessionId||'',taclarSessionId:taclarSessionCode(live.sessionId||Date.now()),plate:live.vehicle||'---',driver:live.driver||'---',route:live.route||'---',status:live.status||'closed',onboard:Number(live.onboard||0),free:live.free==null?4:Number(live.free),start:live.start||'--:--',end:'--:--',duration:'En cours',last:live.last||'',incident:live.incident||null,updated:live.updated||''});
   }catch(e){}
   try{
     var sessions=JSON.parse(localStorage.getItem('taclar_sessions')||'[]');
-    sessions.forEach(function(s,i){rows.push({source:'session-'+i,plate:s.plate||'---',driver:s.driver||'---',route:s.route||'---',status:'closed',onboard:0,free:4,start:s.start||'--:--',end:s.end||s.time||'--:--',duration:s.duration||'--',last:'Session clôturée',incident:(s.incidents&&s.incidents.length)?s.incidents[s.incidents.length-1]:null,closureReason:s.closureReason||'',updated:s.end||s.time||''})});
+    sessions.forEach(function(s,i){rows.push({source:'session-'+i,sessionId:s.sessionId||'',taclarSessionId:s.taclarSessionId||taclarSessionCode(s.sessionId||i),plate:s.plate||'---',driver:s.driver||'---',route:s.route||'---',status:'closed',onboard:0,free:4,start:s.start||'--:--',end:s.end||s.time||'--:--',duration:s.duration||'--',last:'Session clôturée',incident:(s.incidents&&s.incidents.length)?s.incidents[s.incidents.length-1]:null,closureReason:s.closureReason||'',updated:s.end||s.time||''})});
   }catch(e){}
   return rows;
 }
@@ -141,25 +157,47 @@ async function hardClearDispatch(){
 
 function render(){
   var rowsEl=document.getElementById('rows'); var hidden=getHidden();
-  currentRows=getRows().filter(function(r){return hidden.indexOf(rowId(r))===-1});
+  var allRows=getRows();
+  currentRows=allRows.filter(function(r){return hidden.indexOf(rowId(r))===-1});
   rowsEl.innerHTML='';
-  if(currentRows.length===0){rowsEl.innerHTML='<tr><td colspan="11">Aucune session active.</td></tr>';return;}
+  if(currentRows.length===0){rowsEl.innerHTML='<tr><td colspan="12">Aucune session active.</td></tr>';}
   currentRows.slice().reverse().forEach(function(row){
     var idx=currentRows.indexOf(row);
     var tr=document.createElement('tr');
     var info=row.last+(row.closureReason?' · Motif : '+row.closureReason:'')+(row.incident?' - '+row.incident.reason:'');
     tr.innerHTML=
+      '<td>'+((row.taclarSessionId)||taclarSessionCode(row.sessionId||row.source))+'</td>'+
       '<td><a href="#" onclick="showDetail('+idx+')">'+row.plate+'</a></td>'+
       '<td>'+row.driver+'</td><td>'+row.route+'</td><td>'+pill(row.status)+'</td>'+
       '<td>'+row.onboard+'/4</td><td>'+row.free+'</td><td>'+row.start+'</td><td>'+row.end+'</td><td>'+row.duration+'</td><td>'+info+'</td>'+
       '<td><button class="btn-dark" onclick="hideRow('+idx+')">Masquer</button></td>';
     rowsEl.appendChild(tr);
   });
+  renderHiddenRows(allRows,hidden);
 }
+function renderHiddenRows(allRows,hidden){
+  var box=document.getElementById('hiddenRows'); if(!box)return;
+  var rows=allRows.filter(function(r){return hidden.indexOf(rowId(r))!==-1});
+  if(rows.length===0){box.innerHTML='Aucune session masquée.';return;}
+  box.innerHTML='';
+  rows.slice().reverse().forEach(function(r){
+    var div=document.createElement('div');
+    div.className='detailBox';
+    div.innerHTML='<b>'+((r.taclarSessionId)||taclarSessionCode(r.sessionId||r.source))+'</b> · '+r.driver+' · '+r.plate+' · '+statusFr(r.status)+'<br><span class="muted">'+(r.closureReason?'Motif : '+r.closureReason:'')+'</span><br>';
+    var btn=document.createElement('button');
+    btn.textContent='Réafficher';
+    btn.onclick=function(){unhideRowById(rowId(r));};
+    div.appendChild(btn);
+    box.appendChild(div);
+  });
+}
+function toggleHiddenBox(){var b=document.getElementById('hiddenBox'); if(!b)return; b.style.display=(b.style.display==='none'||!b.style.display)?'block':'none'; render();}
+function unhideRowById(id){var h=getHidden().filter(function(x){return x!==id}); setHidden(h); render();}
 function hideRow(i){var r=currentRows[i];if(!r)return;var h=getHidden();var id=rowId(r);if(h.indexOf(id)===-1)h.push(id);setHidden(h);render();}
 function showDetail(i){
   var r=currentRows[i]; if(!r)return;
   var html='';
+  html+='<div class="detailBox"><b>ID Session :</b> '+((r.taclarSessionId)||taclarSessionCode(r.sessionId||r.source))+'</div>';
   html+='<div class="detailBox"><b>Plaque :</b> '+r.plate+'</div>';
   html+='<div class="detailBox"><b>Chauffeur :</b> '+r.driver+'</div>';
   html+='<div class="detailBox"><b>Axe :</b> '+r.route+'</div>';
