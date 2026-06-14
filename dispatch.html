@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V12.3.9.3</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V12.4.0</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -21,12 +21,13 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10;padding:18px;align-items:center;justify-content:center}
 .modal{width:100%;max-width:460px;background:#102629;border-radius:24px;padding:20px;border:1px solid rgba(255,255,255,.15);max-height:88vh;overflow:auto}
 @media(max-width:700px){.app{max-width:430px;padding:10px}.summary{grid-template-columns:1fr 1fr}table{font-size:11px}th,td{padding:6px}}
+
 .statuspill{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:bold;font-size:12px}
 .pillgreen{background:rgba(34,197,94,.18);color:#86efac}.pillorange{background:rgba(250,204,21,.18);color:#fde68a}.pillgray{background:rgba(148,163,184,.18);color:#cbd5e1}
 </style></head>
 <body>
 <div class="app">
-<div class="badge">DISPATCH V12.3.9.3</div>
+<div class="badge">DISPATCH V12.4.0</div>
 <h1>TACLAR Dispatch</h1>
 <div class="subtitle">Suivi opérationnel — Groupage</div>
 
@@ -40,7 +41,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 <h2>Chauffeurs groupage</h2>
 <table>
 <thead><tr>
-<th>Date</th><th>Plaque</th><th>Chauffeur</th><th>Axe</th><th>Statut</th><th>À bord</th><th>Places</th><th>Début</th><th>Fin</th><th>Durée</th><th>Dernière info</th><th>Action</th>
+<th>Plaque</th><th>Chauffeur</th><th>Axe</th><th>Statut</th><th>À bord</th><th>Places</th><th>Début</th><th>Fin</th><th>Durée</th><th>Dernière info</th><th>Action</th>
 </tr></thead>
 <tbody id="rows"></tbody>
 </table>
@@ -52,6 +53,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 <div id="detailContent"></div>
 <button class="btn-dark" onclick="closeDetail()">Fermer</button>
 </div></div>
+
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
@@ -74,15 +76,7 @@ function statusFr(s){if(s==='service')return 'En service';if(s==='incident')retu
 function pill(s){if(s==='service')return '<span class="statuspill pillgreen">En service</span>';if(s==='incident')return '<span class="statuspill pillorange">Incident</span>';return '<span class="statuspill pillgray">Terminé</span>'}
 function getHidden(){try{return JSON.parse(localStorage.getItem('taclar_dispatch_hidden')||'[]')}catch(e){return []}}
 function setHidden(h){localStorage.setItem('taclar_dispatch_hidden',JSON.stringify(h))}
-function rowId(r){return [r.source||'',r.date||'',r.plate||'---',r.driver||'---',r.route||'---',r.start||'',r.end||'',r.updated||''].join('|')}
-function todayFr(){return new Date().toLocaleDateString('fr-FR')}
-function extractDate(value){
-  if(!value)return todayFr();
-  var s=String(value);
-  if(s.indexOf(",")>-1)return s.split(",")[0].trim();
-  if(s.indexOf(" ")>-1)return s.split(" ")[0].trim();
-  return s;
-}
+function rowId(r){return [r.source||'',r.plate||'---',r.driver||'---',r.route||'---',r.start||'',r.end||'',r.updated||''].join('|')}
 var cloudLiveRows=[];
 function startFirebaseDispatch(){
   try{
@@ -98,7 +92,6 @@ function getRows(){
     return cloudLiveRows.map(function(x,i){
       return {
         source:"cloud-"+(x.sessionId||i),
-        date:x.date||extractDate(x.updatedAtLocal),
         plate:x.plate||"---",
         driver:x.driver||"---",
         route:x.route||"---",
@@ -108,8 +101,9 @@ function getRows(){
         start:x.start||"--:--",
         end:x.end||"--:--",
         duration:x.duration||(x.status==="closed"?"--":"En cours"),
-        last:x.last||x.lastInfo||"",
+        last:x.last||"",
         incident:x.incident||null,
+        closureReason:x.closureReason||"",
         updated:x.updatedAtLocal||""
       }
     });
@@ -117,11 +111,11 @@ function getRows(){
   var rows=[];
   try{
     var live=JSON.parse(localStorage.getItem('taclar_live')||'null');
-    if(live && live.status!=='closed') rows.push({source:'live',date:todayFr(),plate:live.vehicle||'---',driver:live.driver||'---',route:live.route||'---',status:live.status||'closed',onboard:Number(live.onboard||0),free:live.free==null?4:Number(live.free),start:live.start||'--:--',end:'--:--',duration:'En cours',last:live.last||'',incident:live.incident||null,updated:live.updated||''});
+    if(live && live.status!=='closed') rows.push({source:'live',plate:live.vehicle||'---',driver:live.driver||'---',route:live.route||'---',status:live.status||'closed',onboard:Number(live.onboard||0),free:live.free==null?4:Number(live.free),start:live.start||'--:--',end:'--:--',duration:'En cours',last:live.last||'',incident:live.incident||null,updated:live.updated||''});
   }catch(e){}
   try{
     var sessions=JSON.parse(localStorage.getItem('taclar_sessions')||'[]');
-    sessions.forEach(function(s,i){rows.push({source:'session-'+i,date:s.date||todayFr(),plate:s.plate||'---',driver:s.driver||'---',route:s.route||'---',status:'closed',onboard:0,free:4,start:s.start||'--:--',end:s.end||s.time||'--:--',duration:s.duration||'--',last:'Session clôturée',incident:(s.incidents&&s.incidents.length)?s.incidents[s.incidents.length-1]:null,updated:s.end||s.time||''})});
+    sessions.forEach(function(s,i){rows.push({source:'session-'+i,plate:s.plate||'---',driver:s.driver||'---',route:s.route||'---',status:'closed',onboard:0,free:4,start:s.start||'--:--',end:s.end||s.time||'--:--',duration:s.duration||'--',last:'Session clôturée',incident:(s.incidents&&s.incidents.length)?s.incidents[s.incidents.length-1]:null,closureReason:s.closureReason||'',updated:s.end||s.time||''})});
   }catch(e){}
   return rows;
 }
@@ -149,13 +143,12 @@ function render(){
   var rowsEl=document.getElementById('rows'); var hidden=getHidden();
   currentRows=getRows().filter(function(r){return hidden.indexOf(rowId(r))===-1});
   rowsEl.innerHTML='';
-  if(currentRows.length===0){rowsEl.innerHTML='<tr><td colspan="12">Aucune session active.</td></tr>';return;}
+  if(currentRows.length===0){rowsEl.innerHTML='<tr><td colspan="11">Aucune session active.</td></tr>';return;}
   currentRows.slice().reverse().forEach(function(row){
     var idx=currentRows.indexOf(row);
     var tr=document.createElement('tr');
-    var info=row.last+(row.incident?' - '+row.incident.reason:'');
+    var info=row.last+(row.closureReason?' · Motif : '+row.closureReason:'')+(row.incident?' - '+row.incident.reason:'');
     tr.innerHTML=
-      '<td>'+row.date+'</td>'+
       '<td><a href="#" onclick="showDetail('+idx+')">'+row.plate+'</a></td>'+
       '<td>'+row.driver+'</td><td>'+row.route+'</td><td>'+pill(row.status)+'</td>'+
       '<td>'+row.onboard+'/4</td><td>'+row.free+'</td><td>'+row.start+'</td><td>'+row.end+'</td><td>'+row.duration+'</td><td>'+info+'</td>'+
@@ -167,10 +160,10 @@ function hideRow(i){var r=currentRows[i];if(!r)return;var h=getHidden();var id=r
 function showDetail(i){
   var r=currentRows[i]; if(!r)return;
   var html='';
-  html+='<div class="detailBox"><b>Date :</b> '+r.date+'</div>';
   html+='<div class="detailBox"><b>Plaque :</b> '+r.plate+'</div>';
   html+='<div class="detailBox"><b>Chauffeur :</b> '+r.driver+'</div>';
   html+='<div class="detailBox"><b>Axe :</b> '+r.route+'</div>';
+  if(r.closureReason)html+='<div class="detailBox"><b>Motif clôture :</b> '+r.closureReason+'</div>';
   html+='<div class="detailBox"><b>Statut :</b> '+statusFr(r.status)+'</div>';
   html+='<div class="detailBox"><b>À bord :</b> '+r.onboard+'/4</div>';
   html+='<div class="detailBox"><b>Places libres :</b> '+r.free+'</div>';
