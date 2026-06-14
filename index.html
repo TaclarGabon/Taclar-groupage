@@ -79,6 +79,11 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 <button class="reasonChoice" data-reason="Client non payé">Client non payé</button>
 <button class="reasonChoice" data-reason="Autre">Autre</button>
 </div>
+<div id="gapOtherBox" style="display:none;margin-top:12px">
+<label>Autre motif</label>
+<input id="gapOtherInput" style="letter-spacing:0;text-align:left;font-size:17px" placeholder="Écrire la raison de l’écart caisse">
+<button id="gapOtherConfirm">Valider le motif</button>
+</div>
 <button class="btn-dark" id="reasonCancel">Annuler</button>
 </div></div>
 <div class="modal-bg" id="closeReasonModal"><div class="modal">
@@ -445,7 +450,23 @@ el("cashOk").onclick=()=>{var expected=totalAmount();var real=Number(cashInput||
 el("gapCorrect").onclick=()=>{el("gapModal").style.display="none";cashInput="";updateCashDisplay();el("cashModal").style.display="flex"};
 document.addEventListener("keydown",function(e){if(el("cashModal").style.display!=="flex")return; if(e.key>="0"&&e.key<="9"){e.preventDefault();addCashDigit(e.key)} else if(e.key==="Backspace"){e.preventDefault();backCashDigit()} else if(e.key==="Enter"){e.preventDefault();el("cashOk").click()} else if(e.key==="Escape"){e.preventDefault();el("cashCancel").click()}});
 el("gapJustify").onclick=()=>{el("gapModal").style.display="none";el("reasonModal").style.display="flex"};
-document.querySelectorAll(".reasonChoice").forEach(b=>b.onclick=()=>{el("reasonModal").style.display="none";completeClose(b.dataset.reason,pendingCash,pendingGap,pendingCloseReason)});
-el("reasonCancel").onclick=()=>{el("reasonModal").style.display="none";el("gapModal").style.display="flex"};
+document.querySelectorAll(".reasonChoice").forEach(b=>b.onclick=()=>{
+  var r=b.dataset.reason;
+  if(r==="Autre"){
+    el("gapOtherBox").style.display="block";
+    el("gapOtherInput").value="";
+    el("gapOtherInput").focus();
+    return;
+  }
+  el("reasonModal").style.display="none";
+  completeClose(r,pendingCash,pendingGap,pendingCloseReason);
+});
+el("gapOtherConfirm").onclick=()=>{
+  var txt=el("gapOtherInput").value.trim();
+  if(!txt)return alert("Écrire la raison de l’écart caisse.");
+  el("reasonModal").style.display="none";
+  completeClose(txt,pendingCash,pendingGap,pendingCloseReason);
+};
+el("reasonCancel").onclick=()=>{el("gapOtherBox").style.display="none";el("reasonModal").style.display="none";el("gapModal").style.display="flex"};
 render()})
 </script></body></html>
