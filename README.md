@@ -1,32 +1,31 @@
-[README.md](https://github.com/user-attachments/files/28922942/README.md)
-# TACLAR Groupage V12.5.2.6
+[README.md](https://github.com/user-attachments/files/28923085/README.md)
+# TACLAR Groupage — V12.5.2.7
 
-Version finale corrective après tests Edan/Otilia.
+Version pilote locale validée.
 
-## Modules
+## Versions par module
+
+- Portal : V12.5.2.7
 - Chauffeur : V12.5.2.6
-- Admin : V12.5.2.6
 - Dispatch : V12.5.1
-- Portal : V12.4.0
+- Admin : V12.5.2.5
 
-## À remplacer
-- index.html
-- admin.html
+## Fichiers à remplacer pour cette version
+
+- portal.html
 - README.md
 
-## À conserver
+## Fichiers à conserver
+
+- index.html
+- admin.html
 - dispatch.html
-- portal.html
 
-## Corrections incluses
-- Admin : titres de colonnes mieux lisibles.
-- Admin : largeur améliorée.
-- Admin : bouton Sauvegarder tout Excel.
-- Excel : onglet Sessions en premier, Résumé en second.
-- ID Session : format TAC-JJMMAAAA-001, 002, 003.
-- Chauffeur : cliquer une deuxième fois sur un siège occupé referme le panneau sans action.
+## Correction V12.5.2.7
 
+- Suppression de la phrase explicative sous le portail :
+  “Cette page sert seulement de portail d’accès. L’interface chauffeur reste la page principale du système.”
 
-## V12.5.2.6
-- Correction chauffeur : si justification d’écart caisse = Autre, un champ texte obligatoire permet d’écrire le motif personnalisé.
-- Fichiers modifiés : index.html, README.md.
+## Prochaine étape
+
+V12.6.0 — Rôles + mots de passe.
