@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 
 <html lang="fr">
-<head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1.0" name="viewport"/><title>TACLAR Admin V12.5.2.4</title><style>
+<head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1.0" name="viewport"/><title>TACLAR Admin V12.5.2.5</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
-.app{max-width:1280px;width:96vw;margin:auto;padding:14px;min-height:100vh}
+.app{max-width:1280px;margin:auto;padding:14px;min-height:100vh}
 .badge{float:right;padding:8px 12px;border-radius:20px;background:rgba(20,184,166,.18);border:1px solid rgba(20,184,166,.5);color:#5eead4;font-weight:bold;font-size:13px}
 h1{margin:0;font-size:32px}.subtitle,.muted{color:#9ca3af}
 .card{background:#102629;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:14px;margin-bottom:12px}
@@ -69,22 +69,34 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 
 /* V12.5.1 admin polish */
 .tableWrap{width:100%;overflow-x:auto}
-table{min-width:1120px;font-size:11px}
-th,td{word-break:break-word;line-height:1.12}
-.actionCell{min-width:130px;max-width:130px;text-align:center;white-space:normal}
-.actionCell button{width:116px;min-height:36px;font-size:11px;padding:5px 5px;margin:2px 0;line-height:1.05}
+table{min-width:1280px;font-size:11px;table-layout:fixed}
+th{white-space:nowrap;word-break:normal;line-height:1.15}
+td{word-break:normal;line-height:1.12}
+th:nth-child(1),td:nth-child(1){width:115px}
+th:nth-child(2),td:nth-child(2){width:86px}
+th:nth-child(3),td:nth-child(3){width:58px}
+th:nth-child(4),td:nth-child(4){width:54px}
+th:nth-child(5),td:nth-child(5){width:64px}
+th:nth-child(6),td:nth-child(6){width:82px}
+th:nth-child(7),td:nth-child(7){width:70px}
+th:nth-child(8),td:nth-child(8){width:52px}
+th:nth-child(14),td:nth-child(14){width:145px}
+th:nth-child(15),td:nth-child(15){width:120px}
+th:nth-child(17),td:nth-child(17){width:122px}
+.actionCell{min-width:118px;max-width:118px;text-align:center;white-space:normal}
+.actionCell button{width:104px;min-height:36px;font-size:11px;padding:5px 5px;margin:2px 0;line-height:1.05}
 .excelStatus{font-weight:bold;font-size:12px}
 </style></head>
 <body>
 
 <div class="app">
-<div class="badge">ADMIN V12.5.2.4</div>
+<div class="badge">ADMIN V12.5.2.5</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 <div class="card">
 <button onclick="render()">Actualiser</button>
-<button onclick="archiveAllPending()">Sauvegarder tout Excel</button>
 <button onclick="downloadExcelArchive()">Télécharger registre Excel</button>
+<button onclick="archiveAllPending()">Sauvegarder tout Excel</button>
 <button class="btn-red" onclick="clearData()">Effacer rapports test</button>
 </div>
 <div class="summary">
@@ -158,7 +170,7 @@ function getSessions(){try{return JSON.parse(localStorage.getItem('taclar_sessio
 function saveSessions(s){localStorage.setItem('taclar_sessions',JSON.stringify(s))}
 function getExcelArchive(){try{return JSON.parse(localStorage.getItem('taclar_excel_archive')||'[]')}catch(e){return []}}
 function saveExcelArchive(a){localStorage.setItem('taclar_excel_archive',JSON.stringify(a))}
-function taclarDateKey(d){return d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")}
+function taclarDateKey(d){return String(d.getDate()).padStart(2,"0")+String(d.getMonth()+1).padStart(2,"0")+d.getFullYear()}
 function parseSessionDate(x){
   var raw=String((x&&x.date)||"").trim();
   if(raw){
@@ -222,28 +234,26 @@ function archiveSession(i){
   sessions[i]=x; saveSessions(sessions); saveExcelArchive(archive); updateSessionFirebaseExcel(x);
   alert("Session sauvegardée dans le registre Excel : "+id); render();
 }
-
 function archiveAllPending(){
   var sessions=ensureSessionIds(getSessions());
   var archive=getExcelArchive();
   var count=0;
+  var savedAt=new Date().toLocaleString('fr-FR');
   sessions.forEach(function(x,i){
-    if(!x.excelSaved){
-      var id=sessionOfficialId(x,i);
-      var row=archiveRow(x,i);
-      if(!archive.some(function(r){return r.id===id;})) archive.push(row);
-      x.taclarSessionId=id;
-      x.excelSaved=true;
-      x.excelSavedAt=new Date().toLocaleString('fr-FR');
-      updateSessionFirebaseExcel(x);
-      count++;
-    }
+    if(x.excelSaved)return;
+    var id=sessionOfficialId(x,i);
+    var row=archiveRow(x,i);
+    if(!archive.some(function(r){return r.id===id;})){archive.push(row);}
+    x.taclarSessionId=id;
+    x.excelSaved=true;
+    x.excelSavedAt=savedAt;
+    updateSessionFirebaseExcel(x);
+    count++;
   });
   saveSessions(sessions);
   saveExcelArchive(archive);
+  alert(count===0 ? "Aucune session en attente." : count+" session(s) sauvegardée(s) dans le registre Excel.");
   render();
-  if(count===0) alert("Toutes les sessions sont déjà sauvegardées dans Excel.");
-  else alert(count+" session(s) sauvegardée(s) dans le registre Excel.");
 }
 async function updateSessionFirebaseExcel(session){
   try{if(typeof db==="undefined"||!session||!session.sessionId)return;
@@ -302,13 +312,12 @@ function downloadExcelArchive(){
   '<Column ss:Width="120"/><Column ss:Width="80"/><Column ss:Width="110"/><Column ss:Width="90"/><Column ss:Width="140"/><Column ss:Width="60"/><Column ss:Width="60"/><Column ss:Width="70"/><Column ss:Width="80"/><Column ss:Width="90"/><Column ss:Width="100"/><Column ss:Width="110"/><Column ss:Width="150"/><Column ss:Width="150"/>'+ 
   '<Row><Cell ss:StyleID="Title" ss:MergeAcross="13"><Data ss:Type="String">TACLAR - Registre officiel des sessions groupage</Data></Cell></Row>'+ 
   '<Row><Cell ss:StyleID="Sub" ss:MergeAcross="13"><Data ss:Type="String">Commission TACLAR : 25%</Data></Cell></Row>'+ 
-  '<Row>'+['ID Session','Date','Chauffeur','Plaque','Axe','Début','Fin','Durée','Passagers','Total','Commission','Net Chauffeur','Motif','Observations'].map(function(h){return xmlCell(h,'Header')}).join('')+'</Row>'+sessionRows+'</Table></Worksheet>'+ 
+  '<Row>'+['ID Session','Date','Chauffeur','Plaque','Axe','Début','Fin','Durée','Passagers','Total','Commission','Net Chauffeur','Motif','Observations'].map(function(h){return xmlCell(h,'Header')}).join('')+'</Row>'+sessionRows+'</Table></Worksheet>'+
   '<Worksheet ss:Name="Résumé"><Table>'+ 
   '<Column ss:Width="110"/><Column ss:Width="100"/><Column ss:Width="140"/><Column ss:Width="150"/>'+ 
   '<Row><Cell ss:StyleID="Title" ss:MergeAcross="3"><Data ss:Type="String">TACLAR - Résumé journalier</Data></Cell></Row>'+ 
   '<Row><Cell ss:StyleID="Sub" ss:MergeAcross="3"><Data ss:Type="String">Jour / Montant total / Commission TACLAR</Data></Cell></Row>'+ 
-  '<Row>'+xmlCell('Jour','Header')+xmlCell('Sessions','Header')+xmlCell('Montant total','Header')+xmlCell('Commission TACLAR','Header')+'</Row>'+summaryRows+'</Table></Worksheet>'+ 
-  '</Workbook>';
+  '<Row>'+xmlCell('Jour','Header')+xmlCell('Sessions','Header')+xmlCell('Montant total','Header')+xmlCell('Commission TACLAR','Header')+'</Row>'+summaryRows+'</Table></Worksheet>'+  '</Workbook>';
   var blob=new Blob([xml],{type:'application/vnd.ms-excel;charset=utf-8;'});
   var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='TACLAR_Registre_Excel_'+taclarDateKey(new Date())+'.xls'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
