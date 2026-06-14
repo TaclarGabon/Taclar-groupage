@@ -1,5 +1,5 @@
-[README.md](https://github.com/user-attachments/files/28921827/README.md)
-# TACLAR Groupage V12.5.2
+[README.md](https://github.com/user-attachments/files/28922004/README.md)
+# TACLAR Groupage V12.5.2.3
 
 ## Version corrective après tests V12.5.1
 
@@ -47,3 +47,23 @@
 3. Admin : vérifier que la commission est bien à 25%.
 4. Admin : sauvegarder Excel et télécharger le registre.
 5. Excel : vérifier les onglets Résumé et Sessions.
+
+
+---
+
+## Correctif V12.5.2.3
+
+Module modifié :
+- Chauffeur : V12.5.2.3
+
+Fichiers à remplacer :
+- index.html
+- README.md
+
+Fichiers à conserver :
+- admin.html
+- dispatch.html
+- portal.html
+
+Correction :
+- Suppression du bloc "Dernières actions" côté chauffeur pour obtenir un écran compact après démarrage : sièges, Tous descendus, Info, Incident, Clôturer session.
