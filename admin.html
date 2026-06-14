@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 
 <html lang="fr">
-<head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1.0" name="viewport"/><title>TACLAR Admin V12.4.0</title><style>
+<head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1.0" name="viewport"/><title>TACLAR Admin V12.5.0</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -70,11 +70,12 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 <body>
 
 <div class="app">
-<div class="badge">ADMIN V12.4.0</div>
+<div class="badge">ADMIN V12.5.0</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 <div class="card">
 <button onclick="render()">Actualiser</button>
+<button onclick="downloadExcelArchive()">Télécharger registre Excel</button>
 <button class="btn-red" onclick="clearData()">Effacer rapports test</button>
 </div>
 <div class="summary">
@@ -87,7 +88,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 <div class="accordionBody open" id="reportBody">
 <table>
 <thead><tr>
-<th>Date</th><th>Début</th><th>Fin</th><th>Durée</th><th>Chauffeur</th><th>Plaque</th><th>Pass.</th><th>Cash</th><th>Airtel</th><th>Montant</th><th>Comm.</th><th>Net</th><th>Motif clôture</th><th>Inc.</th><th>Action</th>
+<th>ID Session</th><th>Date</th><th>Début</th><th>Fin</th><th>Durée</th><th>Chauffeur</th><th>Plaque</th><th>Pass.</th><th>Cash</th><th>Airtel</th><th>Montant</th><th>Comm.</th><th>Net</th><th>Motif clôture</th><th>Excel</th><th>Inc.</th><th>Action</th>
 </tr></thead>
 <tbody id="rows"></tbody>
 </table>
@@ -144,6 +145,45 @@ var currentSessions=[];
 function money(n){return String(n||0).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' FCFA'}
 function getSessions(){try{return JSON.parse(localStorage.getItem('taclar_sessions')||'[]')}catch(e){return []}}
 function saveSessions(s){localStorage.setItem('taclar_sessions',JSON.stringify(s))}
+function getExcelArchive(){try{return JSON.parse(localStorage.getItem('taclar_excel_archive')||'[]')}catch(e){return []}}
+function saveExcelArchive(a){localStorage.setItem('taclar_excel_archive',JSON.stringify(a))}
+function taclarDateKey(d){return d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")}
+function taclarSessionCode(rawId){
+  if(String(rawId||"").indexOf("TAC-")===0)return rawId;
+  var digits=String(rawId||Date.now()).replace(/\D/g,"");
+  var seq=digits.slice(-3).padStart(3,"0");
+  return "TAC-"+taclarDateKey(new Date())+"-"+seq;
+}
+function sessionOfficialId(x,i){return x.taclarSessionId||taclarSessionCode(x.sessionId||i)}
+function excelStatus(x){return x.excelSaved?"🟢 Sauvegardé":"🟡 En attente"}
+function csvEscape(v){v=String(v==null?"":v); if(/[",\n;]/.test(v))return '"'+v.replace(/"/g,'""')+'"'; return v;}
+function archiveRow(x,i){return {
+  id:sessionOfficialId(x,i), date:x.date||'', driver:x.driver||'', plate:x.plate||'', route:x.route||'', start:x.start||'', end:x.end||x.time||'', passengers:x.passengers||0,
+  total:x.total||0, commission:x.commission||0, net:x.net||0, closureReason:x.closureReason||'Non précisé', observations:x.justification||''
+}}
+function archiveSession(i){
+  var sessions=getSessions(); var x=sessions[i]; if(!x)return;
+  var id=sessionOfficialId(x,i); var archive=getExcelArchive();
+  if(!archive.some(function(r){return r.id===id;})) archive.push(archiveRow(x,i));
+  x.taclarSessionId=id; x.excelSaved=true; x.excelSavedAt=new Date().toLocaleString();
+  sessions[i]=x; saveSessions(sessions); saveExcelArchive(archive); updateSessionFirebaseExcel(x);
+  alert("Session sauvegardée dans le registre Excel : "+id); render();
+}
+async function updateSessionFirebaseExcel(session){
+  try{if(typeof db==="undefined"||!session||!session.sessionId)return;
+    await db.collection("groupage_sessions").doc(String(session.sessionId).replace(/[^a-zA-Z0-9_-]/g,"_")).set({taclarSessionId:session.taclarSessionId,excelSaved:true,excelSavedAt:session.excelSavedAt},{merge:true});
+  }catch(e){console.log("updateSessionFirebaseExcel error",e)}
+}
+function downloadExcelArchive(){
+  var archive=getExcelArchive();
+  if(archive.length===0){alert("Aucune session sauvegardée dans le registre Excel.");return;}
+  var headers=["ID Session","Date","Chauffeur","Plaque","Axe","Début","Fin","Passagers","Total","Commission","Net Chauffeur","Motif","Observations"];
+  var lines=[headers.join(';')];
+  archive.forEach(function(r){lines.push([r.id,r.date,r.driver,r.plate,r.route,r.start,r.end,r.passengers,r.total,r.commission,r.net,r.closureReason,r.observations].map(csvEscape).join(';'));});
+  var blob=new Blob(["\ufeff"+lines.join("\n")],{type:"text/csv;charset=utf-8;"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="TACLAR_Registre_Excel_"+taclarDateKey(new Date())+".csv"; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
 function startFirebaseAdmin(){
   try{
     db.collection('groupage_sessions').orderBy('updatedAt','desc').onSnapshot(function(snapshot){
@@ -165,12 +205,13 @@ function render(){
   var s=getSessions(); currentSessions=s;
   var rows=document.getElementById('rows'); rows.innerHTML='';
   var p=0,t=0,c=0;
-  if(s.length===0) rows.innerHTML='<tr><td colspan="15">Aucune session enregistrée.</td></tr>';
+  if(s.length===0) rows.innerHTML='<tr><td colspan="17">Aucune session enregistrée.</td></tr>';
   s.slice().reverse().forEach(function(x,revIndex){
     var i=s.length-1-revIndex;
     p+=Number(x.passengers||0); t+=Number(x.total||0); c+=Number(x.commission||0);
     var tr=document.createElement('tr');
     tr.innerHTML=
+      '<td>'+(sessionOfficialId(x,i))+'</td>'+
       '<td>'+(x.date||'')+'</td>'+
       '<td>'+(x.start||'--:--')+'</td>'+
       '<td>'+(x.end||x.time||'--:--')+'</td>'+
@@ -184,8 +225,9 @@ function render(){
       '<td>'+money(x.commission)+'</td>'+
       '<td>'+money(x.net)+'</td>'+
       '<td>'+(x.closureReason||'Non précisé')+'</td>'+
+      '<td>'+excelStatus(x)+(x.excelSavedAt?'<br><small>'+x.excelSavedAt+'</small>':'')+'</td>'+
       '<td>'+((x.incidents||[]).length)+'</td>'+
-      '<td><button class="btn-red" onclick="deleteSession('+i+')">Supprimer</button></td>';
+      '<td>'+(!x.excelSaved?'<button onclick="archiveSession('+i+')">Sauvegarder Excel</button><br>':'')+'<button class="btn-red" onclick="deleteSession('+i+')">Supprimer</button></td>';
     rows.appendChild(tr);
   });
   document.getElementById('sCount').textContent=s.length;
@@ -197,6 +239,8 @@ function showDetail(i){
   var x=currentSessions[i]; if(!x)return;
   var inc=(x.incidents||[]).map(function(a){return (a.time||'')+' - '+(a.reason||'')}).join('<br>') || 'Aucun';
   var html='';
+  html+='<div class="detailBox"><b>ID Session :</b> '+sessionOfficialId(x,i)+'</div>';
+  html+='<div class="detailBox"><b>Statut Excel :</b> '+excelStatus(x)+(x.excelSavedAt?' · '+x.excelSavedAt:'')+'</div>';
   html+='<div class="detailBox"><b>Chauffeur :</b> '+(x.driver||'---')+'</div>';
   html+='<div class="detailBox"><b>Plaque :</b> '+(x.plate||'---')+'</div>';
   html+='<div class="detailBox"><b>Axe :</b> '+(x.route||'---')+'</div>';
@@ -221,12 +265,18 @@ function closeDetail(){document.getElementById('detailModal').style.display='non
 async function deleteSession(i){
   var sessions=getSessions();
   var session=sessions[i];
-  if(!confirm("Supprimer cette ligne ?"))return;
+  if(!session)return;
+  if(!session.excelSaved){
+    alert("Suppression impossible. Cette session doit d’abord être sauvegardée dans Excel.");
+    return;
+  }
+  if(!confirm("Cette session est sauvegardée dans Excel. Supprimer définitivement cette ligne de l’Admin ?"))return;
   sessions.splice(i,1);
   saveSessions(sessions);
   await deleteSessionFromFirebase(session);
   render();
 }
+
 
 async function deleteCollectionAll(collectionName){
   var total=0;
