@@ -1,44 +1,49 @@
-[README.md](https://github.com/user-attachments/files/28921528/README.md)
-# TACLAR Groupage V12.5.1
+[README.md](https://github.com/user-attachments/files/28921827/README.md)
+# TACLAR Groupage V12.5.2
 
-Version de finition après validation de V12.5.0.
+## Version corrective après tests V12.5.1
 
-## Composition officielle
-
-- Portal : V12.4.0
-- Chauffeur : V12.4.0
-- Admin : V12.5.1
+### Versions par module
+- Chauffeur : V12.5.2
+- Admin : V12.5.2
 - Dispatch : V12.5.1
+- Portal : V12.4.0
 
 ## Fichiers à remplacer
-
-- admin.html
-- dispatch.html
-- README.md
+- `index.html`
+- `admin.html`
+- `README.md`
 
 ## Fichiers à conserver
+- `dispatch.html` si la version V12.5.1 fonctionne déjà
+- `portal.html`
 
-- index.html
-- portal.html
+## Corrections incluses
 
-## Corrections V12.5.1
+### Chauffeur
+- Correction du clavier numérique de vérification caisse.
+- Ajout de la saisie possible au clavier physique : chiffres, Backspace, Entrée, Échap.
+- Après démarrage de session, la zone de saisie plaque / PIN / axe est masquée.
+- Le chauffeur voit seulement la session active, le nom chauffeur et les sièges.
 
 ### Admin
-- ID Session corrigé au format TAC-AAAAMMJJ-001, 002, 003.
-- Dates affichées au format français JJ/MM/AAAA.
-- Colonne Durée ajoutée au registre Excel.
-- Export Excel amélioré en fichier .xls avec mise en forme TACLAR.
-- Boutons du tableau mieux recadrés.
+- Commission TACLAR passée à 25%.
+- ID Session corrigé au format séquentiel : TAC-AAAAMMJJ-001, 002, 003...
+- Dates conservées au format francophone : JJ/MM/AAAA.
+- Export Excel amélioré avec 2 onglets :
+  - Résumé
+  - Sessions
+- Onglet Résumé : Jour, nombre de sessions, montant total, commission TACLAR.
+- Onglet Sessions : registre détaillé des sessions.
+- Recadrage amélioré de la colonne Action.
 
 ### Dispatch
-- Bouton Sessions masquées avec compteur : Sessions masquées (0), (1), (2)...
-- Titre de la section masquée avec compteur.
-- ID Session aligné avec le format officiel.
+- Aucune modification nécessaire si V12.5.1 fonctionne.
+- Sessions masquées avec compteur déjà présentes.
 
 ## À tester
-
-1. Créer deux sessions dans la même journée.
-2. Vérifier que les ID deviennent TAC-AAAAMMJJ-001 puis TAC-AAAAMMJJ-002.
-3. Vérifier les dates au format JJ/MM/AAAA.
-4. Masquer deux sessions dans Dispatch et vérifier le compteur.
-5. Sauvegarder les sessions dans Admin puis télécharger le registre Excel.
+1. Chauffeur : démarrer une session, vérifier que plaque/PIN sont masqués après démarrage.
+2. Chauffeur : clôturer une session et tester le clavier numérique.
+3. Admin : vérifier que la commission est bien à 25%.
+4. Admin : sauvegarder Excel et télécharger le registre.
+5. Excel : vérifier les onglets Résumé et Sessions.
