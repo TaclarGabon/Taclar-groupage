@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 
 <html lang="fr">
-<head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1.0" name="viewport"/><title>TACLAR Admin V12.3.9.3</title><style>
+<head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1.0" name="viewport"/><title>TACLAR Admin V12.4.0</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -70,7 +70,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 <body>
 
 <div class="app">
-<div class="badge">ADMIN V12.3.9.3</div>
+<div class="badge">ADMIN V12.4.0</div>
 <h1>TACLAR Admin</h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 <div class="card">
@@ -87,7 +87,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 <div class="accordionBody open" id="reportBody">
 <table>
 <thead><tr>
-<th>Date</th><th>Début</th><th>Fin</th><th>Durée</th><th>Chauffeur</th><th>Plaque</th><th>Pass.</th><th>Cash</th><th>Airtel</th><th>Montant</th><th>Comm.</th><th>Net</th><th>Inc.</th><th>Action</th>
+<th>Date</th><th>Début</th><th>Fin</th><th>Durée</th><th>Chauffeur</th><th>Plaque</th><th>Pass.</th><th>Cash</th><th>Airtel</th><th>Montant</th><th>Comm.</th><th>Net</th><th>Motif clôture</th><th>Inc.</th><th>Action</th>
 </tr></thead>
 <tbody id="rows"></tbody>
 </table>
@@ -165,7 +165,7 @@ function render(){
   var s=getSessions(); currentSessions=s;
   var rows=document.getElementById('rows'); rows.innerHTML='';
   var p=0,t=0,c=0;
-  if(s.length===0) rows.innerHTML='<tr><td colspan="14">Aucune session enregistrée.</td></tr>';
+  if(s.length===0) rows.innerHTML='<tr><td colspan="15">Aucune session enregistrée.</td></tr>';
   s.slice().reverse().forEach(function(x,revIndex){
     var i=s.length-1-revIndex;
     p+=Number(x.passengers||0); t+=Number(x.total||0); c+=Number(x.commission||0);
@@ -183,6 +183,7 @@ function render(){
       '<td>'+money(x.total)+'</td>'+
       '<td>'+money(x.commission)+'</td>'+
       '<td>'+money(x.net)+'</td>'+
+      '<td>'+(x.closureReason||'Non précisé')+'</td>'+
       '<td>'+((x.incidents||[]).length)+'</td>'+
       '<td><button class="btn-red" onclick="deleteSession('+i+')">Supprimer</button></td>';
     rows.appendChild(tr);
@@ -203,6 +204,7 @@ function showDetail(i){
   html+='<div class="detailBox"><b>Fin :</b> '+(x.end||x.time||'--:--')+'</div>';
   html+='<div class="detailBox"><b>Durée :</b> '+(x.duration||'--')+'</div>';
   html+='<div class="detailBox"><b>Passagers :</b> '+(x.passengers||0)+'</div>';
+  html+='<div class="detailBox"><b>Motif clôture :</b> '+(x.closureReason||'Non précisé')+'</div>';
   html+='<div class="detailBox"><b>Montant app :</b> '+money(x.total)+'</div>';
   html+='<div class="detailBox"><b>Total Cash :</b> '+money(paymentTotal(x,"Cash"))+'</div>';
   html+='<div class="detailBox"><b>Total Airtel Money :</b> '+money(paymentTotal(x,"Airtel Money"))+'</div>';
