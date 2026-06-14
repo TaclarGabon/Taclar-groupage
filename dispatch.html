@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V12.5.0</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V12.5.1</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -27,13 +27,13 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </style></head>
 <body>
 <div class="app">
-<div class="badge">DISPATCH V12.5.0</div>
+<div class="badge">DISPATCH V12.5.1</div>
 <h1>TACLAR Dispatch</h1>
 <div class="subtitle">Suivi opérationnel — Groupage</div>
 
 <div class="card">
 <button onclick="render()">Actualiser</button>
-<button class="btn-dark" onclick="toggleHiddenBox()">📂 Sessions masquées</button>
+<button class="btn-dark" id="hiddenToggleBtn" onclick="toggleHiddenBox()">📂 Sessions masquées (0)</button>
 <button class="btn-red" onclick="hardClearDispatch()">Effacer statut dispatch</button>
 <p class="muted">Aucun montant n’est affiché ici.</p>
 </div>
@@ -48,7 +48,7 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 </table>
 </div>
 <div class="card" id="hiddenBox" style="display:none">
-<h2>Sessions masquées</h2>
+<h2 id="hiddenTitle">Sessions masquées (0)</h2>
 <p class="muted">Une session masquée n’est pas supprimée. Tu peux la réafficher ici.</p>
 <div id="hiddenRows" class="detailBox">Aucune session masquée.</div>
 </div>
@@ -83,12 +83,20 @@ function pill(s){if(s==='service')return '<span class="statuspill pillgreen">En 
 function getHidden(){try{return JSON.parse(localStorage.getItem('taclar_dispatch_hidden')||'[]')}catch(e){return []}}
 function setHidden(h){localStorage.setItem('taclar_dispatch_hidden',JSON.stringify(h))}
 function taclarDateKey(d){return d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")}
+function parseSessionDate(x){
+  var raw=String((x&&x.date)||"").trim();
+  if(raw){var m=raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if(m){var a=Number(m[1]),b=Number(m[2]),y=Number(m[3]); if(a>12)return new Date(y,b-1,a); if(b>12)return new Date(y,a-1,b); return new Date(y,a-1,b);} var d=new Date(raw); if(!isNaN(d))return d;}
+  return new Date();
+}
+function timeToMinutes(t){var m=String(t||"").match(/(\d{1,2}):(\d{2})/);return m?Number(m[1])*60+Number(m[2]):0}
+function assignOfficialIds(rows){
+  var counters={};
+  rows.slice().sort(function(a,b){var ka=taclarDateKey(parseSessionDate(a)), kb=taclarDateKey(parseSessionDate(b)); return ka.localeCompare(kb)||timeToMinutes(a.start)-timeToMinutes(b.start);}).forEach(function(r){var key=taclarDateKey(parseSessionDate(r)); counters[key]=(counters[key]||0)+1; if(!r.taclarSessionId||!/^TAC-\d{8}-\d{3}$/.test(String(r.taclarSessionId)))r.taclarSessionId='TAC-'+key+'-'+String(counters[key]).padStart(3,'0');});
+  return rows;
+}
 function taclarSessionCode(rawId,dateText){
-  if(String(rawId||"").indexOf("TAC-")===0)return rawId;
-  var d=new Date();
-  var digits=String(rawId||Date.now()).replace(/\D/g,"");
-  var seq=digits.slice(-3).padStart(3,"0");
-  return "TAC-"+taclarDateKey(d)+"-"+seq;
+  if(String(rawId||"").indexOf("TAC-")===0 && /^TAC-\d{8}-\d{3}$/.test(String(rawId)))return rawId;
+  return "TAC-"+taclarDateKey(new Date())+"-001";
 }
 function rowId(r){return [r.sessionId||'',r.source||'',r.plate||'---',r.driver||'---',r.route||'---',r.start||'',r.end||'',r.updated||''].join('|')}
 var cloudLiveRows=[];
@@ -103,7 +111,7 @@ function startFirebaseDispatch(){
 }
 function getRows(){
   if(cloudLiveRows && cloudLiveRows.length){
-    return cloudLiveRows.map(function(x,i){
+    return assignOfficialIds(cloudLiveRows.map(function(x,i){
       return {
         source:"cloud-"+(x.sessionId||i),
         sessionId:x.sessionId||"",
@@ -122,7 +130,7 @@ function getRows(){
         closureReason:x.closureReason||"",
         updated:x.updatedAtLocal||""
       }
-    });
+    }));
   }
   var rows=[];
   try{
@@ -133,7 +141,7 @@ function getRows(){
     var sessions=JSON.parse(localStorage.getItem('taclar_sessions')||'[]');
     sessions.forEach(function(s,i){rows.push({source:'session-'+i,sessionId:s.sessionId||'',taclarSessionId:s.taclarSessionId||taclarSessionCode(s.sessionId||i),plate:s.plate||'---',driver:s.driver||'---',route:s.route||'---',status:'closed',onboard:0,free:4,start:s.start||'--:--',end:s.end||s.time||'--:--',duration:s.duration||'--',last:'Session clôturée',incident:(s.incidents&&s.incidents.length)?s.incidents[s.incidents.length-1]:null,closureReason:s.closureReason||'',updated:s.end||s.time||''})});
   }catch(e){}
-  return rows;
+  return assignOfficialIds(rows);
 }
 
 async function hardClearDispatch(){
@@ -178,6 +186,9 @@ function render(){
 function renderHiddenRows(allRows,hidden){
   var box=document.getElementById('hiddenRows'); if(!box)return;
   var rows=allRows.filter(function(r){return hidden.indexOf(rowId(r))!==-1});
+  var label='📂 Sessions masquées ('+rows.length+')';
+  var btn=document.getElementById('hiddenToggleBtn'); if(btn)btn.textContent=label;
+  var title=document.getElementById('hiddenTitle'); if(title)title.textContent='Sessions masquées ('+rows.length+')';
   if(rows.length===0){box.innerHTML='Aucune session masquée.';return;}
   box.innerHTML='';
   rows.slice().reverse().forEach(function(r){
