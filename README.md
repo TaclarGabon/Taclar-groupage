@@ -1,26 +1,44 @@
-[README.md](https://github.com/user-attachments/files/28921250/README.md)
-# Taclar-groupage — V12.5.0
+[README.md](https://github.com/user-attachments/files/28921528/README.md)
+# TACLAR Groupage V12.5.1
 
-Application de gestion de taxi partagé TACLAR pour Libreville.
+Version de finition après validation de V12.5.0.
 
-## Versions
-- Chauffeur : V12.5.0
-- Dispatch : V12.5.0
-- Admin : V12.5.0
-- Portal : V12.5.0
+## Composition officielle
 
-## Base validée
-V12.4.0 validée après tests réels : création session, occupation sièges, descente passagers, incident, clôture avec motif, synchronisation Dispatch, synchronisation Admin, Firebase.
+- Portal : V12.4.0
+- Chauffeur : V12.4.0
+- Admin : V12.5.1
+- Dispatch : V12.5.1
 
-## Ajouts V12.5.0
-- Dispatch : bouton Sessions masquées et fonction Réafficher.
-- Admin : statut Excel En attente / Sauvegardé.
-- Admin : blocage de suppression tant que la session n’est pas sauvegardée Excel.
-- Admin : bouton Télécharger registre Excel.
-- ID Session automatique au format TAC-AAAAMMJJ-XXX.
-- Export CSV compatible Excel.
+## Fichiers à remplacer
 
-## Règle opérationnelle
-- Chauffeur : clôture avec motif.
-- Dispatch : masquer / réafficher seulement.
-- Admin : sauvegarder Excel puis supprimer définitivement.
+- admin.html
+- dispatch.html
+- README.md
+
+## Fichiers à conserver
+
+- index.html
+- portal.html
+
+## Corrections V12.5.1
+
+### Admin
+- ID Session corrigé au format TAC-AAAAMMJJ-001, 002, 003.
+- Dates affichées au format français JJ/MM/AAAA.
+- Colonne Durée ajoutée au registre Excel.
+- Export Excel amélioré en fichier .xls avec mise en forme TACLAR.
+- Boutons du tableau mieux recadrés.
+
+### Dispatch
+- Bouton Sessions masquées avec compteur : Sessions masquées (0), (1), (2)...
+- Titre de la section masquée avec compteur.
+- ID Session aligné avec le format officiel.
+
+## À tester
+
+1. Créer deux sessions dans la même journée.
+2. Vérifier que les ID deviennent TAC-AAAAMMJJ-001 puis TAC-AAAAMMJJ-002.
+3. Vérifier les dates au format JJ/MM/AAAA.
+4. Masquer deux sessions dans Dispatch et vérifier le compteur.
+5. Sauvegarder les sessions dans Admin puis télécharger le registre Excel.
