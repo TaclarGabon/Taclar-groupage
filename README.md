@@ -1,31 +1,54 @@
-[README.md](https://github.com/user-attachments/files/28923085/README.md)
-# TACLAR Groupage — V12.5.2.7
+[README.md](https://github.com/user-attachments/files/28941475/README.md)
+# TACLAR Groupage — V12.6.0
 
-Version pilote locale validée.
+## Objet
+
+Sécurité locale simple avec rôles et codes fixes.
+
+## Codes d'accès
+
+- Direction TACLAR : 0512
+- Admin : 1111
+- Dispatch : 2222
+- Chauffeur : 3333
+
+## Accès
+
+- Direction TACLAR : Chauffeur + Dispatch + Admin
+- Admin : Admin uniquement
+- Dispatch : Dispatch uniquement
+- Chauffeur : Chauffeur uniquement
 
 ## Versions par module
 
-- Portal : V12.5.2.7
-- Chauffeur : V12.5.2.6
-- Dispatch : V12.5.1
-- Admin : V12.5.2.5
+- Portal : V12.6.0
+- Chauffeur : V12.6.0
+- Dispatch : V12.6.0
+- Admin : V12.6.0
 
-## Fichiers à remplacer pour cette version
+## Fichiers à remplacer
 
 - portal.html
+- index.html
+- dispatch.html
+- admin.html
 - README.md
 
-## Fichiers à conserver
+## Ce qui n'a pas été modifié
 
-- index.html
-- admin.html
-- dispatch.html
+La logique métier reste inchangée :
 
-## Correction V12.5.2.7
-
-- Suppression de la phrase explicative sous le portail :
-  “Cette page sert seulement de portail d’accès. L’interface chauffeur reste la page principale du système.”
+- sièges chauffeur
+- clôture avec motifs
+- contrôle de caisse
+- justification “Autre”
+- sessions masquées / réafficher
+- export Excel
+- commission 25 %
+- sauvegarde Excel sécurisée
 
 ## Prochaine étape
 
-V12.6.0 — Rôles + mots de passe.
+V12.6.1 : Direction TACLAR pourra modifier les codes depuis l'application.
+
+V13.0.0 : Firebase Authentication et comptes utilisateurs cloud.
