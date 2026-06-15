@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V12.5.2.5</title><style>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V12.6.0</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:430px;margin:auto;padding:10px;min-height:100vh}
@@ -35,7 +35,22 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 
 .resumeBox{display:none;background:rgba(250,204,21,.14);border:1px solid rgba(250,204,21,.45);color:#fde68a;border-radius:16px;padding:12px;margin-bottom:10px}
 .resumeBox button{margin-top:8px}
-</style></head>
+</style>
+<script>
+(function(){
+  var TAC_AUTH_KEY = "taclar_auth_v12_6";
+  var allowedRoles = ["direction","chauffeur"];
+  function getAuth(){
+    try{return JSON.parse(localStorage.getItem(TAC_AUTH_KEY)||"null")}catch(e){return null}
+  }
+  var auth = getAuth();
+  if(!auth || !auth.role || allowedRoles.indexOf(auth.role) === -1){
+    window.location.href = "./portal.html";
+  }
+})();
+</script>
+
+</head>
 <body><div class="app">
 <div class="badge">CHAUFFEUR V12.5.2.5</div><h1>TACLAR</h1><div class="subtitle">Chauffeur — Taxi partagé / Groupage</div><div class="status" id="status">Choisir un axe puis démarrer</div><div class="resumeBox" id="resumeBox"><b>Session active détectée</b><div id="resumeText"></div><button id="resumeBtn">Reprendre session</button><button class="btn-red" id="discardResumeBtn">Nouvelle session</button></div>
 <div class="card" id="startCard"><div class="grid2"><div><label>Axe</label><select id="route"><option>Okala → Aéroport</option><option>Akanda → Centre-ville</option><option>Nzeng-Ayong → Aéroport</option><option>Charbonnages → Louis</option><option>Owendo → Centre-ville</option><option>Sans axe fixe</option></select></div><div><label>Type véhicule</label><select id="vehicleType"><option value="4">Corolla - 4 places</option></select></div></div><br><label>Plaque véhicule</label><input id="plateInput" placeholder="Ex : LBV-1234"><br><br><label>Nom chauffeur</label><input id="driverNameInput" placeholder="Ex : Paul"><br><br><label>PIN chauffeur</label><input id="driverPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="1234"><br><br><button id="startBtn">Démarrer la session</button></div>
