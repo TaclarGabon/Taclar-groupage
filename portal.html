@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TACLAR Groupage Portal V12.5.0</title>
+<title>TACLAR Groupage Portal V12.6.0</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
@@ -12,23 +12,131 @@ body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:wh
 h1{margin:0;font-size:34px}
 .subtitle{color:#9ca3af;margin-bottom:22px}
 .card{background:#102629;border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:18px;margin-bottom:14px}
-a{display:block;text-decoration:none;color:#05201f;background:#14b8a6;border-radius:18px;padding:18px;margin:12px 0;text-align:center;font-size:22px;font-weight:bold}
+label{color:#9ca3af;font-size:13px;display:block;margin-bottom:6px}
+select,input{width:100%;padding:13px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:#061416;color:white;font-size:17px;margin-bottom:12px}
+button,a{display:block;width:100%;text-decoration:none;color:#05201f;background:#14b8a6;border:none;border-radius:18px;padding:16px;margin:10px 0;text-align:center;font-size:19px;font-weight:bold;cursor:pointer}
 .admin{background:#facc15;color:#111827}
 .dispatch{background:rgba(255,255,255,.12);color:white;border:1px solid rgba(255,255,255,.18)}
+.dark{background:rgba(255,255,255,.08);color:white;border:1px solid rgba(255,255,255,.14)}
+.red{background:rgba(239,68,68,.18);color:#fecaca;border:1px solid rgba(239,68,68,.4)}
 .note{color:#94a3b8;font-size:13px;line-height:1.4}
+.err{display:none;background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.35);color:#fecaca;border-radius:14px;padding:10px;margin-bottom:12px;font-weight:bold}
+.ok{display:none;background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.35);color:#86efac;border-radius:14px;padding:10px;margin-bottom:12px;font-weight:bold}
+.hidden{display:none}
 </style>
 </head>
 <body>
 <div class="app">
-<div class="badge">PORTAL V12.5.2.7</div>
+<div class="badge">PORTAL V12.6.0</div>
 <h1>TACLAR</h1>
-<div class="subtitle">Groupage — Accès principal</div>
+<div class="subtitle">Groupage — Accès sécurisé</div>
+
+<div class="card" id="loginCard">
+  <div class="err" id="errBox">Code incorrect.</div>
+  <label>Sélectionnez votre accès</label>
+  <select id="roleSelect">
+    <option value="direction">🏢 Direction TACLAR</option>
+    <option value="admin">👨‍💼 Admin</option>
+    <option value="dispatch">📡 Dispatch</option>
+    <option value="chauffeur">🚕 Chauffeur</option>
+  </select>
+
+  <label>Code d'accès</label>
+  <input id="accessCode" type="password" inputmode="numeric" maxlength="4" placeholder="Entrez le code">
+
+  <button id="loginBtn">Se connecter</button>
+</div>
+
+<div class="card hidden" id="directionCard">
+  <div class="ok" style="display:block">Connecté : Direction TACLAR</div>
+  <a href="./index.html">🚕 Ouvrir Chauffeur</a>
+  <a class="dispatch" href="./dispatch.html">📡 Ouvrir Dispatch</a>
+  <a class="admin" href="./admin.html">👨‍💼 Ouvrir Admin</a>
+  <button class="red" id="logoutDirection">Déconnexion</button>
+</div>
+
+<div class="card hidden" id="singleCard">
+  <div class="ok" id="singleOk"></div>
+  <a id="singleLink" href="#">Ouvrir</a>
+  <button class="red" id="logoutSingle">Déconnexion</button>
+</div>
 
 <div class="card">
-<a href="./">Chauffeur</a>
-<a class="admin" href="./admin.html">Admin</a>
-<a class="dispatch" href="./dispatch.html">Dispatch</a>
+  <p class="note">
+    Accès sécurisé local. La gestion complète des comptes cloud sera prévue dans la V13.
+  </p>
 </div>
 </div>
+
+<script>
+const TAC_AUTH_KEY = "taclar_auth_v12_6";
+const CODES = {
+  direction: "0512",
+  admin: "1111",
+  dispatch: "2222",
+  chauffeur: "3333"
+};
+const LABELS = {
+  direction: "Direction TACLAR",
+  admin: "Admin",
+  dispatch: "Dispatch",
+  chauffeur: "Chauffeur"
+};
+const LINKS = {
+  admin: "./admin.html",
+  dispatch: "./dispatch.html",
+  chauffeur: "./index.html"
+};
+
+function el(id){return document.getElementById(id)}
+function saveAuth(role){
+  localStorage.setItem(TAC_AUTH_KEY, JSON.stringify({role:role, time:Date.now()}));
+}
+function clearAuth(){
+  localStorage.removeItem(TAC_AUTH_KEY);
+}
+function getAuth(){
+  try{return JSON.parse(localStorage.getItem(TAC_AUTH_KEY)||"null")}catch(e){return null}
+}
+function showDashboard(role){
+  el("loginCard").classList.add("hidden");
+  el("directionCard").classList.add("hidden");
+  el("singleCard").classList.add("hidden");
+
+  if(role==="direction"){
+    el("directionCard").classList.remove("hidden");
+  }else{
+    el("singleOk").style.display="block";
+    el("singleOk").textContent="Connecté : "+LABELS[role];
+    el("singleLink").textContent="Ouvrir "+LABELS[role];
+    el("singleLink").href=LINKS[role];
+    if(role==="admin") el("singleLink").className="admin";
+    else if(role==="dispatch") el("singleLink").className="dispatch";
+    else el("singleLink").className="";
+    el("singleCard").classList.remove("hidden");
+  }
+}
+function showLogin(){
+  el("loginCard").classList.remove("hidden");
+  el("directionCard").classList.add("hidden");
+  el("singleCard").classList.add("hidden");
+}
+el("loginBtn").onclick=function(){
+  var role=el("roleSelect").value;
+  var code=el("accessCode").value.trim();
+  if(code===CODES[role]){
+    saveAuth(role);
+    el("errBox").style.display="none";
+    showDashboard(role);
+  }else{
+    el("errBox").style.display="block";
+  }
+};
+el("logoutDirection").onclick=function(){clearAuth();showLogin();el("accessCode").value=""};
+el("logoutSingle").onclick=function(){clearAuth();showLogin();el("accessCode").value=""};
+
+var auth=getAuth();
+if(auth && auth.role) showDashboard(auth.role);
+</script>
 </body>
 </html>
