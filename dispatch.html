@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V12.5.1</title><style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TACLAR Dispatch V12.6.0</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:980px;margin:auto;padding:14px;min-height:100vh}
@@ -24,7 +24,22 @@ a{color:#5eead4;font-weight:bold;text-decoration:none}
 
 .statuspill{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:bold;font-size:12px}
 .pillgreen{background:rgba(34,197,94,.18);color:#86efac}.pillorange{background:rgba(250,204,21,.18);color:#fde68a}.pillgray{background:rgba(148,163,184,.18);color:#cbd5e1}
-</style></head>
+</style>
+<script>
+(function(){
+  var TAC_AUTH_KEY = "taclar_auth_v12_6";
+  var allowedRoles = ["direction","dispatch"];
+  function getAuth(){
+    try{return JSON.parse(localStorage.getItem(TAC_AUTH_KEY)||"null")}catch(e){return null}
+  }
+  var auth = getAuth();
+  if(!auth || !auth.role || allowedRoles.indexOf(auth.role) === -1){
+    window.location.href = "./portal.html";
+  }
+})();
+</script>
+
+</head>
 <body>
 <div class="app">
 <div class="badge">DISPATCH V12.5.1</div>
