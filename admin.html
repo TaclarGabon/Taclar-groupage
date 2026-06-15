@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 
 <html lang="fr">
-<head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1.0" name="viewport"/><title>TACLAR Admin V12.5.2.5</title><style>
+<head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1.0" name="viewport"/><title>TACLAR Admin V12.6.0</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:1280px;margin:auto;padding:14px;min-height:100vh}
@@ -86,7 +86,22 @@ th:nth-child(17),td:nth-child(17){width:122px}
 .actionCell{min-width:118px;max-width:118px;text-align:center;white-space:normal}
 .actionCell button{width:104px;min-height:36px;font-size:11px;padding:5px 5px;margin:2px 0;line-height:1.05}
 .excelStatus{font-weight:bold;font-size:12px}
-</style></head>
+</style>
+<script>
+(function(){
+  var TAC_AUTH_KEY = "taclar_auth_v12_6";
+  var allowedRoles = ["direction","admin"];
+  function getAuth(){
+    try{return JSON.parse(localStorage.getItem(TAC_AUTH_KEY)||"null")}catch(e){return null}
+  }
+  var auth = getAuth();
+  if(!auth || !auth.role || allowedRoles.indexOf(auth.role) === -1){
+    window.location.href = "./portal.html";
+  }
+})();
+</script>
+
+</head>
 <body>
 
 <div class="app">
