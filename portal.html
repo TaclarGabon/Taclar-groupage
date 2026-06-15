@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TACLAR Groupage Portal V12.6.0</title>
+<title>TACLAR Groupage Portal V12.6.1</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
@@ -23,11 +23,14 @@ button,a{display:block;width:100%;text-decoration:none;color:#05201f;background:
 .err{display:none;background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.35);color:#fecaca;border-radius:14px;padding:10px;margin-bottom:12px;font-weight:bold}
 .ok{display:none;background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.35);color:#86efac;border-radius:14px;padding:10px;margin-bottom:12px;font-weight:bold}
 .hidden{display:none}
+.smallTitle{font-size:18px;font-weight:bold;margin:8px 0 14px;color:#5eead4}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:420px){.grid2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="app">
-<div class="badge">PORTAL V12.6.0.1</div>
+<div class="badge">PORTAL V12.6.1</div>
 <h1>TACLAR</h1>
 <div class="subtitle">Groupage — Accès sécurisé</div>
 
@@ -42,7 +45,7 @@ button,a{display:block;width:100%;text-decoration:none;color:#05201f;background:
   </select>
 
   <label>Code d'accès</label>
-  <input id="accessCode" type="password" inputmode="numeric" maxlength="4" placeholder="Entrez le code">
+  <input id="accessCode" type="password" inputmode="numeric" maxlength="8" placeholder="Entrez le code">
 
   <button id="loginBtn">Se connecter</button>
 </div>
@@ -52,7 +55,30 @@ button,a{display:block;width:100%;text-decoration:none;color:#05201f;background:
   <a href="./index.html">🚕 Ouvrir Chauffeur</a>
   <a class="dispatch" href="./dispatch.html">📡 Ouvrir Dispatch</a>
   <a class="admin" href="./admin.html">👨‍💼 Ouvrir Admin</a>
+  <button class="dark" id="openCodesBtn">⚙️ Gestion des accès</button>
   <button class="red" id="logoutDirection">Déconnexion</button>
+</div>
+
+<div class="card hidden" id="codesCard">
+  <div class="smallTitle">⚙️ Modifier les codes d'accès</div>
+  <div class="err" id="codesErr">Tous les codes doivent contenir entre 4 et 8 chiffres.</div>
+  <div class="ok" id="codesOk">Codes enregistrés.</div>
+
+  <label>Direction TACLAR</label>
+  <input id="codeDirection" inputmode="numeric" maxlength="8">
+
+  <label>Admin</label>
+  <input id="codeAdmin" inputmode="numeric" maxlength="8">
+
+  <label>Dispatch</label>
+  <input id="codeDispatch" inputmode="numeric" maxlength="8">
+
+  <label>Chauffeur</label>
+  <input id="codeChauffeur" inputmode="numeric" maxlength="8">
+
+  <button id="saveCodesBtn">Enregistrer les codes</button>
+  <button class="dark" id="defaultCodesBtn">Restaurer codes par défaut</button>
+  <button class="red" id="closeCodesBtn">Retour Direction</button>
 </div>
 
 <div class="card hidden" id="singleCard">
@@ -63,25 +89,29 @@ button,a{display:block;width:100%;text-decoration:none;color:#05201f;background:
 
 <div class="card">
   <p class="note">
-    Accès sécurisé local. La gestion complète des comptes cloud sera prévue dans la V13.
+    Accès sécurisé local. Les codes peuvent maintenant être modifiés par la Direction TACLAR.
   </p>
 </div>
 </div>
 
 <script>
 const TAC_AUTH_KEY = "taclar_auth_v12_6";
-const CODES = {
+const TAC_CODES_KEY = "taclar_codes_v12_6_1";
+
+const DEFAULT_CODES = {
   direction: "0512",
   admin: "1111",
   dispatch: "2222",
   chauffeur: "3333"
 };
+
 const LABELS = {
   direction: "Direction TACLAR",
   admin: "Admin",
   dispatch: "Dispatch",
   chauffeur: "Chauffeur"
 };
+
 const LINKS = {
   admin: "./admin.html",
   dispatch: "./dispatch.html",
@@ -89,6 +119,20 @@ const LINKS = {
 };
 
 function el(id){return document.getElementById(id)}
+function getCodes(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(TAC_CODES_KEY)||"null");
+    return Object.assign({}, DEFAULT_CODES, saved || {});
+  }catch(e){
+    return Object.assign({}, DEFAULT_CODES);
+  }
+}
+function setCodes(codes){
+  localStorage.setItem(TAC_CODES_KEY, JSON.stringify(codes));
+}
+function validCode(v){
+  return /^[0-9]{4,8}$/.test(String(v||"").trim());
+}
 function saveAuth(role){
   localStorage.setItem(TAC_AUTH_KEY, JSON.stringify({role:role, time:Date.now()}));
 }
@@ -102,6 +146,7 @@ function showDashboard(role){
   el("loginCard").classList.add("hidden");
   el("directionCard").classList.add("hidden");
   el("singleCard").classList.add("hidden");
+  el("codesCard").classList.add("hidden");
 
   if(role==="direction"){
     el("directionCard").classList.remove("hidden");
@@ -120,11 +165,28 @@ function showLogin(){
   el("loginCard").classList.remove("hidden");
   el("directionCard").classList.add("hidden");
   el("singleCard").classList.add("hidden");
+  el("codesCard").classList.add("hidden");
 }
+function fillCodesForm(){
+  const c = getCodes();
+  el("codeDirection").value = c.direction;
+  el("codeAdmin").value = c.admin;
+  el("codeDispatch").value = c.dispatch;
+  el("codeChauffeur").value = c.chauffeur;
+}
+function showCodes(){
+  fillCodesForm();
+  el("codesErr").style.display="none";
+  el("codesOk").style.display="none";
+  el("directionCard").classList.add("hidden");
+  el("codesCard").classList.remove("hidden");
+}
+
 el("loginBtn").onclick=function(){
   var role=el("roleSelect").value;
   var code=el("accessCode").value.trim();
-  if(code===CODES[role]){
+  var codes=getCodes();
+  if(code===codes[role]){
     saveAuth(role);
     el("errBox").style.display="none";
     showDashboard(role);
@@ -132,16 +194,49 @@ el("loginBtn").onclick=function(){
     el("errBox").style.display="block";
   }
 };
+
+el("accessCode").addEventListener("keydown", function(e){
+  if(e.key === "Enter"){
+    e.preventDefault();
+    el("loginBtn").click();
+  }
+});
+
 el("logoutDirection").onclick=function(){clearAuth();showLogin();el("accessCode").value=""};
 el("logoutSingle").onclick=function(){clearAuth();showLogin();el("accessCode").value=""};
 
+el("openCodesBtn").onclick=showCodes;
+el("closeCodesBtn").onclick=function(){
+  el("codesCard").classList.add("hidden");
+  el("directionCard").classList.remove("hidden");
+};
 
-document.getElementById('accessCode').addEventListener('keydown', function(e){
-  if(e.key === 'Enter'){
-    e.preventDefault();
-    document.getElementById('loginBtn').click();
+el("saveCodesBtn").onclick=function(){
+  const newCodes = {
+    direction: el("codeDirection").value.trim(),
+    admin: el("codeAdmin").value.trim(),
+    dispatch: el("codeDispatch").value.trim(),
+    chauffeur: el("codeChauffeur").value.trim()
+  };
+  if(!validCode(newCodes.direction)||!validCode(newCodes.admin)||!validCode(newCodes.dispatch)||!validCode(newCodes.chauffeur)){
+    el("codesErr").style.display="block";
+    el("codesOk").style.display="none";
+    return;
   }
-});
+  setCodes(newCodes);
+  el("codesErr").style.display="none";
+  el("codesOk").style.display="block";
+};
+
+el("defaultCodesBtn").onclick=function(){
+  if(confirm("Restaurer les codes par défaut ?")){
+    setCodes(DEFAULT_CODES);
+    fillCodesForm();
+    el("codesErr").style.display="none";
+    el("codesOk").style.display="block";
+    el("codesOk").textContent="Codes par défaut restaurés.";
+  }
+};
 
 var auth=getAuth();
 if(auth && auth.role) showDashboard(auth.role);
