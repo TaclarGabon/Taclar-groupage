@@ -1,27 +1,40 @@
-# TACLAR Groupage — V12.6.1 Clean
+# TACLAR Groupage — V12.6.2
 
-Version épurée du portail.
+## Objet
 
-## Modification
+Interface professionnelle : retrait des versions visibles sur les écrans opérationnels.
 
-- Suppression du badge visible “PORTAL V12.6.1”.
-- Suppression de la note technique en bas du portail.
-- La sécurité, les rôles et la gestion des accès restent inchangés.
+## Modifications
+
+- Suppression du badge de version visible sur Chauffeur.
+- Suppression du badge de version visible sur Dispatch.
+- Suppression du badge de version visible sur Admin.
+- Ajout d’un bloc “Informations système” dans Gestion des accès, visible uniquement par Direction TACLAR.
+
+## Informations système
+
+- Portail : V12.6.1 CLEAN
+- Chauffeur : V12.5.2.6
+- Dispatch : V12.5.1
+- Admin : V12.5.2.5
+- Dernière mise à jour : V12.6.2
 
 ## Fichiers à remplacer
 
 - portal.html
-- README.md
-
-## Fichiers à conserver
-
 - index.html
 - admin.html
 - dispatch.html
+- README.md
 
-## Base fonctionnelle
+## Ce qui reste inchangé
 
-- Portal : V12.6.1 Clean
-- Chauffeur : V12.6.0
-- Dispatch : V12.6.0
-- Admin : V12.6.0
+- Sécurité locale
+- Codes d’accès
+- Gestion des accès
+- Chauffeur
+- Dispatch
+- Admin
+- Excel
+- Sessions masquées
+- Contrôle de caisse
