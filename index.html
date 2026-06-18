@@ -106,15 +106,29 @@ body{ min-height:100vh; }
 }
 
 
-/* V12.6.2.3 — Paiement dans le flux entre tarifs et actions */
+
+/* V12.6.2.4 — Optimisation tablette sans casser les panneaux */
 @media (min-width:700px){
-  .modal, .sheet, .payment, .payment-panel, #paymentPanel, #paymentModal{
-    position: static !important;
-    inset: auto !important;
-    transform: none !important;
-    margin: 10px auto !important;
-    max-width: 100% !important;
-    z-index: 1 !important;
+  .app{ max-width:620px !important; }
+  button, .btn{ min-height:56px !important; }
+  .fare-grid button,
+  .price-grid button,
+  .tarif-grid button,
+  .amount-grid button,
+  #farePanel button,
+  #pricePanel button,
+  #amountPanel button{
+    min-height:56px !important;
+    font-size:21px !important;
+    font-weight:800 !important;
+  }
+  .bottom-actions,
+  #bottomActions,
+  .session-actions,
+  #sessionActions{
+    position:static !important;
+    margin-top:8px !important;
+    padding-top:0 !important;
   }
 }
 
@@ -570,95 +584,72 @@ render()})
 </script>
 
 <script>
-/* V12.6.2.3 — Ordre final Chauffeur tablette
-   Ordre visuel forcé :
-   Sièges → Montants → Mode de paiement → Tous descendus → Info/Incident → Clôturer session
+/* V12.6.2.4 — Correction fermeture paiement
+   Ne déplace plus le bloc Mode de paiement.
+   Après validation Cash/Airtel/Moov, on force la fermeture visuelle des panneaux.
 */
 (function(){
-  function txt(el){
+  function text(el){
     return (el && el.textContent ? el.textContent : "").toLowerCase().replace(/\s+/g," ").trim();
   }
 
-  function isVisible(el){
-    if(!el) return false;
-    const st = window.getComputedStyle(el);
-    return st.display !== "none" && st.visibility !== "hidden" && el.offsetParent !== null;
+  function isPaymentChoice(el){
+    const t = text(el);
+    return t === "cash" || t === "airtel money" || t === "moov money";
   }
 
-  function findPaymentBlock(){
+  function hidePaymentBlocks(){
     const nodes = Array.from(document.querySelectorAll("div,section,article,main"));
-    let matches = nodes.filter(el => {
-      const t = txt(el);
-      return isVisible(el) &&
-        t.includes("mode de paiement") &&
-        (t.includes("cash") || t.includes("airtel money") || t.includes("moov money"));
-    });
-
-    if(!matches.length) return null;
-
-    // Choose the smallest visible container that contains the full payment content.
-    matches.sort((a,b) => (a.offsetHeight*a.offsetWidth) - (b.offsetHeight*b.offsetWidth));
-    return matches[0];
-  }
-
-  function findAllDownButton(){
-    const nodes = Array.from(document.querySelectorAll("button,div,a"));
-    return nodes.find(el => isVisible(el) && txt(el) === "tous descendus") ||
-           nodes.find(el => isVisible(el) && txt(el).includes("tous descendus"));
-  }
-
-  function findBottomAnchor(){
-    const allDown = findAllDownButton();
-    if(allDown) return allDown;
-
-    const nodes = Array.from(document.querySelectorAll("button,div,a"));
-    return nodes.find(el => {
-      const t = txt(el);
-      return isVisible(el) && (t === "info" || t.includes("incident") || t.includes("clôturer session"));
+    nodes.forEach(el => {
+      const t = text(el);
+      if(t.includes("mode de paiement") && (t.includes("cash") || t.includes("airtel money") || t.includes("moov money"))){
+        // Hide only after confirmed payment; original state remains untouched during selection.
+        el.style.display = "none";
+      }
     });
   }
 
-  function normalizePaymentBlock(payment){
-    if(!payment) return;
-    payment.style.position = "static";
-    payment.style.left = "auto";
-    payment.style.right = "auto";
-    payment.style.top = "auto";
-    payment.style.bottom = "auto";
-    payment.style.transform = "none";
-    payment.style.margin = "10px auto";
-    payment.style.maxWidth = "100%";
-    payment.style.width = payment.style.width || "100%";
-    payment.style.zIndex = "1";
+  function hideAdjustmentBlocks(){
+    const nodes = Array.from(document.querySelectorAll("div,section,article,main"));
+    nodes.forEach(el => {
+      const t = text(el);
+      if((t.includes("+500") && t.includes("-500")) ||
+         (t.includes("+1000") && t.includes("-1000")) ||
+         t.includes("descendu / libérer siège")){
+        el.style.display = "none";
+      }
+    });
   }
 
-  function movePaymentIntoFlow(){
-    const payment = findPaymentBlock();
-    const anchor = findBottomAnchor();
-
-    if(!payment || !anchor || payment === anchor) return;
-
-    normalizePaymentBlock(payment);
-
-    // If payment is inside an overlay/modal wrapper, move the visible payment block itself.
-    const targetParent = anchor.parentNode;
-    if(!targetParent) return;
-
-    // Put payment immediately before Tous descendus / bottom actions.
-    if(payment.parentNode !== targetParent || payment.nextElementSibling !== anchor){
-      targetParent.insertBefore(payment, anchor);
-    }
+  function restoreActionsFlow(){
+    const nodes = Array.from(document.querySelectorAll("div,section"));
+    nodes.forEach(el => {
+      const t = text(el);
+      if(t.includes("info") && t.includes("incident") && t.includes("clôturer session")){
+        el.style.position = "static";
+        el.style.marginTop = "8px";
+      }
+    });
   }
 
-  function run(){
-    setTimeout(movePaymentIntoFlow, 30);
-    setTimeout(movePaymentIntoFlow, 150);
-    setTimeout(movePaymentIntoFlow, 350);
-  }
+  // User clicks Cash/Airtel/Moov, browser confirmation appears.
+  // After confirmation, reset panels so the page returns to normal.
+  document.addEventListener("click", function(e){
+    const target = e.target.closest("button,div,a");
+    if(!target || !isPaymentChoice(target)) return;
 
-  document.addEventListener("click", run, true);
-  document.addEventListener("touchend", run, true);
-  window.addEventListener("load", run);
+    setTimeout(function(){
+      hidePaymentBlocks();
+      hideAdjustmentBlocks();
+      restoreActionsFlow();
+    }, 250);
+
+    setTimeout(function(){
+      hidePaymentBlocks();
+      hideAdjustmentBlocks();
+      restoreActionsFlow();
+    }, 700);
+  }, true);
 })();
 </script>
 
