@@ -105,6 +105,19 @@ body{ min-height:100vh; }
   }
 }
 
+
+/* V12.6.2.3 — Paiement dans le flux entre tarifs et actions */
+@media (min-width:700px){
+  .modal, .sheet, .payment, .payment-panel, #paymentPanel, #paymentModal{
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    margin: 10px auto !important;
+    max-width: 100% !important;
+    z-index: 1 !important;
+  }
+}
+
 </style>
 <script>
 (function(){
@@ -555,96 +568,97 @@ el("gapOtherConfirm").onclick=()=>{
 el("reasonCancel").onclick=()=>{el("gapOtherBox").style.display="none";el("reasonModal").style.display="none";el("gapModal").style.display="flex"};
 render()})
 </script>
+
 <script>
-/* V12.6.2.2 — Ordre tablette chauffeur
-   Force l'ordre visuel :
-   Sièges → Tarifs → Mode de paiement → Tous descendus → Info/Incident → Clôturer session
+/* V12.6.2.3 — Ordre final Chauffeur tablette
+   Ordre visuel forcé :
+   Sièges → Montants → Mode de paiement → Tous descendus → Info/Incident → Clôturer session
 */
 (function(){
-  function isPaymentNode(el){
-    if(!el || !el.textContent) return false;
-    var t = el.textContent.toLowerCase();
-    return t.includes("mode de paiement") || 
-           (t.includes("cash") && t.includes("airtel money") && t.includes("moov money"));
+  function txt(el){
+    return (el && el.textContent ? el.textContent : "").toLowerCase().replace(/\s+/g," ").trim();
   }
 
-  function isBottomActionsNode(el){
-    if(!el || !el.textContent) return false;
-    var t = el.textContent.toLowerCase();
-    return t.includes("info") && t.includes("incident") && t.includes("clôturer session");
-  }
-
-  function isAllDownNode(el){
-    if(!el || !el.textContent) return false;
-    var t = el.textContent.toLowerCase().trim();
-    return t === "tous descendus" || t.includes("tous descendus");
-  }
-
-  function closestBlock(el){
-    while(el && el !== document.body){
-      var tag = (el.tagName || "").toLowerCase();
-      if(tag === "div" || tag === "section" || tag === "main"){
-        var cls = el.className ? String(el.className) : "";
-        if(cls.includes("card") || cls.includes("modal") || cls.includes("panel") || cls.includes("sheet") || el.offsetHeight > 80){
-          return el;
-        }
-      }
-      el = el.parentElement;
-    }
-    return null;
+  function isVisible(el){
+    if(!el) return false;
+    const st = window.getComputedStyle(el);
+    return st.display !== "none" && st.visibility !== "hidden" && el.offsetParent !== null;
   }
 
   function findPaymentBlock(){
-    var candidates = Array.from(document.querySelectorAll("div,section,main"));
-    return candidates.find(function(el){
-      if(!isPaymentNode(el)) return false;
-      var txt = el.textContent.toLowerCase();
-      return txt.includes("montant sélectionné") || txt.includes("cash");
+    const nodes = Array.from(document.querySelectorAll("div,section,article,main"));
+    let matches = nodes.filter(el => {
+      const t = txt(el);
+      return isVisible(el) &&
+        t.includes("mode de paiement") &&
+        (t.includes("cash") || t.includes("airtel money") || t.includes("moov money"));
+    });
+
+    if(!matches.length) return null;
+
+    // Choose the smallest visible container that contains the full payment content.
+    matches.sort((a,b) => (a.offsetHeight*a.offsetWidth) - (b.offsetHeight*b.offsetWidth));
+    return matches[0];
+  }
+
+  function findAllDownButton(){
+    const nodes = Array.from(document.querySelectorAll("button,div,a"));
+    return nodes.find(el => isVisible(el) && txt(el) === "tous descendus") ||
+           nodes.find(el => isVisible(el) && txt(el).includes("tous descendus"));
+  }
+
+  function findBottomAnchor(){
+    const allDown = findAllDownButton();
+    if(allDown) return allDown;
+
+    const nodes = Array.from(document.querySelectorAll("button,div,a"));
+    return nodes.find(el => {
+      const t = txt(el);
+      return isVisible(el) && (t === "info" || t.includes("incident") || t.includes("clôturer session"));
     });
   }
 
-  function findAllDownBlock(){
-    var candidates = Array.from(document.querySelectorAll("button,div"));
-    var node = candidates.find(isAllDownNode);
-    return node ? closestBlock(node) || node : null;
+  function normalizePaymentBlock(payment){
+    if(!payment) return;
+    payment.style.position = "static";
+    payment.style.left = "auto";
+    payment.style.right = "auto";
+    payment.style.top = "auto";
+    payment.style.bottom = "auto";
+    payment.style.transform = "none";
+    payment.style.margin = "10px auto";
+    payment.style.maxWidth = "100%";
+    payment.style.width = payment.style.width || "100%";
+    payment.style.zIndex = "1";
   }
 
-  function findBottomActionsBlock(){
-    var candidates = Array.from(document.querySelectorAll("div,section"));
-    return candidates.find(isBottomActionsNode);
-  }
+  function movePaymentIntoFlow(){
+    const payment = findPaymentBlock();
+    const anchor = findBottomAnchor();
 
-  function reorderPayment(){
-    var payment = findPaymentBlock();
-    var allDown = findAllDownBlock();
-    var bottom = findBottomActionsBlock();
+    if(!payment || !anchor || payment === anchor) return;
 
-    if(payment && allDown && payment !== allDown){
-      // Put payment immediately before Tous descendus.
-      if(payment.compareDocumentPosition(allDown) & Node.DOCUMENT_POSITION_FOLLOWING){
-        allDown.parentNode.insertBefore(payment, allDown);
-      } else if(!(payment.nextElementSibling === allDown)){
-        allDown.parentNode.insertBefore(payment, allDown);
-      }
-      payment.style.position = "static";
-      payment.style.margin = "10px auto";
-      payment.style.maxWidth = "100%";
-      payment.style.zIndex = "1";
-    }
+    normalizePaymentBlock(payment);
 
-    if(bottom){
-      bottom.style.position = "static";
-      bottom.style.marginTop = "8px";
+    // If payment is inside an overlay/modal wrapper, move the visible payment block itself.
+    const targetParent = anchor.parentNode;
+    if(!targetParent) return;
+
+    // Put payment immediately before Tous descendus / bottom actions.
+    if(payment.parentNode !== targetParent || payment.nextElementSibling !== anchor){
+      targetParent.insertBefore(payment, anchor);
     }
   }
 
-  document.addEventListener("click", function(){
-    setTimeout(reorderPayment, 50);
-    setTimeout(reorderPayment, 200);
-  });
-  window.addEventListener("load", function(){
-    setTimeout(reorderPayment, 300);
-  });
+  function run(){
+    setTimeout(movePaymentIntoFlow, 30);
+    setTimeout(movePaymentIntoFlow, 150);
+    setTimeout(movePaymentIntoFlow, 350);
+  }
+
+  document.addEventListener("click", run, true);
+  document.addEventListener("touchend", run, true);
+  window.addEventListener("load", run);
 })();
 </script>
 
