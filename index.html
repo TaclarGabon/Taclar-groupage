@@ -97,6 +97,14 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 /* Les actions bas restent dans le flux normal pour éviter le grand vide */
 body{ min-height:100vh; }
 
+
+/* V12.6.2.2 — Le mode paiement reste avant les boutons bas */
+@media (min-width:700px){
+  div, section{
+    scroll-margin-top:12px;
+  }
+}
+
 </style>
 <script>
 (function(){
@@ -546,4 +554,98 @@ el("gapOtherConfirm").onclick=()=>{
 };
 el("reasonCancel").onclick=()=>{el("gapOtherBox").style.display="none";el("reasonModal").style.display="none";el("gapModal").style.display="flex"};
 render()})
-</script></body></html>
+</script>
+<script>
+/* V12.6.2.2 — Ordre tablette chauffeur
+   Force l'ordre visuel :
+   Sièges → Tarifs → Mode de paiement → Tous descendus → Info/Incident → Clôturer session
+*/
+(function(){
+  function isPaymentNode(el){
+    if(!el || !el.textContent) return false;
+    var t = el.textContent.toLowerCase();
+    return t.includes("mode de paiement") || 
+           (t.includes("cash") && t.includes("airtel money") && t.includes("moov money"));
+  }
+
+  function isBottomActionsNode(el){
+    if(!el || !el.textContent) return false;
+    var t = el.textContent.toLowerCase();
+    return t.includes("info") && t.includes("incident") && t.includes("clôturer session");
+  }
+
+  function isAllDownNode(el){
+    if(!el || !el.textContent) return false;
+    var t = el.textContent.toLowerCase().trim();
+    return t === "tous descendus" || t.includes("tous descendus");
+  }
+
+  function closestBlock(el){
+    while(el && el !== document.body){
+      var tag = (el.tagName || "").toLowerCase();
+      if(tag === "div" || tag === "section" || tag === "main"){
+        var cls = el.className ? String(el.className) : "";
+        if(cls.includes("card") || cls.includes("modal") || cls.includes("panel") || cls.includes("sheet") || el.offsetHeight > 80){
+          return el;
+        }
+      }
+      el = el.parentElement;
+    }
+    return null;
+  }
+
+  function findPaymentBlock(){
+    var candidates = Array.from(document.querySelectorAll("div,section,main"));
+    return candidates.find(function(el){
+      if(!isPaymentNode(el)) return false;
+      var txt = el.textContent.toLowerCase();
+      return txt.includes("montant sélectionné") || txt.includes("cash");
+    });
+  }
+
+  function findAllDownBlock(){
+    var candidates = Array.from(document.querySelectorAll("button,div"));
+    var node = candidates.find(isAllDownNode);
+    return node ? closestBlock(node) || node : null;
+  }
+
+  function findBottomActionsBlock(){
+    var candidates = Array.from(document.querySelectorAll("div,section"));
+    return candidates.find(isBottomActionsNode);
+  }
+
+  function reorderPayment(){
+    var payment = findPaymentBlock();
+    var allDown = findAllDownBlock();
+    var bottom = findBottomActionsBlock();
+
+    if(payment && allDown && payment !== allDown){
+      // Put payment immediately before Tous descendus.
+      if(payment.compareDocumentPosition(allDown) & Node.DOCUMENT_POSITION_FOLLOWING){
+        allDown.parentNode.insertBefore(payment, allDown);
+      } else if(!(payment.nextElementSibling === allDown)){
+        allDown.parentNode.insertBefore(payment, allDown);
+      }
+      payment.style.position = "static";
+      payment.style.margin = "10px auto";
+      payment.style.maxWidth = "100%";
+      payment.style.zIndex = "1";
+    }
+
+    if(bottom){
+      bottom.style.position = "static";
+      bottom.style.marginTop = "8px";
+    }
+  }
+
+  document.addEventListener("click", function(){
+    setTimeout(reorderPayment, 50);
+    setTimeout(reorderPayment, 200);
+  });
+  window.addEventListener("load", function(){
+    setTimeout(reorderPayment, 300);
+  });
+})();
+</script>
+
+</body></html>
