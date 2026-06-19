@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V12.6.2.9</title><style>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V12.6.2.10</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:430px;margin:auto;padding:10px;min-height:100vh}
@@ -108,50 +108,22 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 }
 
 
-/* V12.6.2.8 — Style historique chauffeur */
-.taclarHistoryBox{
-  max-height:360px!important;
-  overflow:auto!important;
-  display:flex!important;
-  flex-direction:column!important;
-  gap:6px!important;
-  padding-right:4px!important;
+/* V12.6.2.10 — Info du jour corrigée stable */
+.historyLine{
+  gap:10px;
+  align-items:center;
 }
-.taclarHistoryLine{
-  background:rgba(255,255,255,.08)!important;
-  border:1px solid rgba(255,255,255,.10)!important;
-  border-radius:10px!important;
-  padding:8px 10px!important;
-  font-size:13px!important;
-  line-height:1.25!important;
-  color:white!important;
+.historyLine span{
+  line-height:1.25;
+}
+.historyLine b{
+  color:#5eead4;
+  white-space:nowrap;
 }
 @media (min-width:700px){
-  .taclarHistoryBox{max-height:420px!important;}
-  .taclarHistoryLine{font-size:15px!important;padding:10px 12px!important;}
-}
-
-
-/* V12.6.2.9 — Historique Info corrigé */
-.taclarInfoHistoryLine{
-  display:flex!important;
-  justify-content:space-between!important;
-  gap:10px!important;
-  background:rgba(255,255,255,.08)!important;
-  border:1px solid rgba(255,255,255,.10)!important;
-  border-radius:10px!important;
-  padding:8px 10px!important;
-  font-size:13px!important;
-  line-height:1.25!important;
-  color:white!important;
-}
-.taclarInfoHistoryLine .amount{
-  color:#5eead4!important;
-  font-weight:800!important;
-  white-space:nowrap!important;
-}
-@media (min-width:700px){
-  .taclarInfoHistoryLine{font-size:15px!important;padding:10px 12px!important;}
+  #privateHistory{
+    max-height:420px;
+  }
 }
 
 </style>
@@ -472,7 +444,49 @@ function dropAllSeats(){
 }
 
 function reportIncident(r){if(r==="Autre"){el("incidentModal").style.display="none";el("customIncidentInput").value="";el("customIncidentModal").style.display="flex";return}if(!confirm("Confirmer incident : "+r+" ?"))return;currentIncident={reason:r,time:nowText(),driver:driverName};incidentActions.push(currentIncident);el("status").textContent="Incident signalé : "+r;el("incidentModal").style.display="none";render()}
-function showInfo(){el("infoDriver").textContent=driverName;el("infoPassengers").textContent=passengersCount();el("infoTotal").textContent=money(totalAmount());el("infoStart").textContent=startTime;var list=el("privateHistory");list.innerHTML="";privateActions.slice().reverse().forEach(a=>{var r=document.createElement("div");r.className="row";r.innerHTML="<span>"+a.seat+" · "+a.status+" · "+(a.payment||"Cash")+"</span><b>"+money(a.amount)+"</b>";list.appendChild(r)});incidentActions.slice().reverse().forEach(i=>{var r=document.createElement("div");r.className="row";r.innerHTML="<span>Incident · "+i.reason+" · "+i.time+"</span><b>ALERTE</b>";list.appendChild(r)});el("infoModal").style.display="flex"}
+function showInfo(){
+  el("infoDriver").textContent=driverName;
+  el("infoPassengers").textContent=passengersCount();
+  el("infoTotal").textContent=money(totalAmount());
+  el("infoStart").textContent=startTime;
+
+  var list=el("privateHistory");
+  list.innerHTML="";
+
+  function actionTime(a){
+    return a.dropTime || a.time || "--:--";
+  }
+  function actionLabel(a){
+    var status=String(a.status||"").toLowerCase();
+    if(status.indexOf("desc")>=0)return "descendu";
+    if(status.indexOf("bord")>=0)return "à bord";
+    return a.status||"mouvement";
+  }
+
+  privateActions.slice().reverse().forEach(function(a){
+    var r=document.createElement("div");
+    r.className="row historyLine";
+    var left=actionTime(a)+" — "+(a.seat||"---")+" "+actionLabel(a)+" — "+(a.payment||"Cash");
+    r.innerHTML="<span>"+left+"</span><b>"+money(a.amount||0)+"</b>";
+    list.appendChild(r);
+  });
+
+  incidentActions.slice().reverse().forEach(function(i){
+    var r=document.createElement("div");
+    r.className="row historyLine";
+    r.innerHTML="<span>"+(i.time||"--:--")+" — Incident — "+(i.reason||"")+"</span><b>ALERTE</b>";
+    list.appendChild(r);
+  });
+
+  if(list.innerHTML===""){
+    var r=document.createElement("div");
+    r.className="row historyLine";
+    r.innerHTML="<span>Aucun historique pour cette session.</span><b>---</b>";
+    list.appendChild(r);
+  }
+
+  el("infoModal").style.display="flex";
+}
 function resetForNewSession(){
 localStorage.removeItem("taclar_driver_session");
 el("resumeBox").style.display="none";
@@ -603,169 +617,4 @@ el("gapOtherConfirm").onclick=()=>{
 };
 el("reasonCancel").onclick=()=>{el("gapOtherBox").style.display="none";el("reasonModal").style.display="none";el("gapModal").style.display="flex"};
 render()})
-</script>
-<script>
-/* V12.6.2.8 — Chauffeur historique lisible */
-(function(){
-  function fmtMoney(n){
-    n = Number(n || 0);
-    return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ') + ' FCFA';
-  }
-  function txt(el){
-    return (el && el.textContent ? el.textContent : '').toLowerCase();
-  }
-  function getSessions(){
-    try{return JSON.parse(localStorage.getItem('taclar_sessions')||'[]')}catch(e){return []}
-  }
-  function getCurrent(){
-    var keys=['taclar_current_session','taclar_session','taclar_active_session'];
-    for(var i=0;i<keys.length;i++){
-      try{
-        var v=JSON.parse(localStorage.getItem(keys[i])||'null');
-        if(v && Array.isArray(v.details)) return v;
-      }catch(e){}
-    }
-    var all=getSessions();
-    for(var j=all.length-1;j>=0;j--){
-      if(all[j] && Array.isArray(all[j].details)) return all[j];
-    }
-    return null;
-  }
-  function line(d){
-    var rawTime = d.time || d.createdAt || d.updatedAt || '';
-    var m = String(rawTime).match(/(\d{1,2}):(\d{2})/);
-    var time = m ? (String(m[1]).padStart(2,'0')+':'+m[2]) : '--:--';
-    var seat = d.seat || d.place || d.position || 'Siège';
-    var status = String(d.status || d.action || '').toLowerCase();
-    var action = status.indexOf('desc') >= 0 ? 'descendu' : (status.indexOf('mont') >= 0 ? 'monté' : (status || 'mouvement'));
-    var payment = d.payment || d.mode || 'Cash';
-    var amount = Number(d.amount || d.montant || 0);
-    if(amount>0) return time+' — '+seat+' '+action+' — '+payment+' — '+fmtMoney(amount);
-    return time+' — '+seat+' '+action;
-  }
-  function enhance(){
-    var modal = Array.from(document.querySelectorAll('div,section')).find(function(el){
-      var t=txt(el);
-      return t.indexOf('info du jour')>=0 && t.indexOf('historique')>=0;
-    });
-    if(!modal || modal.getAttribute('data-taclar-history-enhanced')==='1') return;
-    var session=getCurrent();
-    if(!session || !Array.isArray(session.details)) return;
-    var details=session.details.filter(function(d){return d && (d.status||d.action||d.amount||d.payment||d.seat)});
-    if(!details.length) return;
-    modal.setAttribute('data-taclar-history-enhanced','1');
-
-    var possible = Array.from(modal.querySelectorAll('div')).filter(function(d){
-      var t=txt(d);
-      return t.indexOf('fcfa')>=0 || t.indexOf('cash')>=0 || t.indexOf('descendu')>=0 || t.indexOf('monté')>=0;
-    });
-    var box = possible[possible.length-1];
-    var content = details.map(function(d){return '<div class="taclarHistoryLine">'+line(d)+'</div>';}).join('');
-    if(box){
-      box.innerHTML=content;
-      box.classList.add('taclarHistoryBox');
-    }else{
-      box=document.createElement('div');
-      box.className='taclarHistoryBox';
-      box.innerHTML=content;
-      modal.appendChild(box);
-    }
-  }
-  document.addEventListener('click',function(e){
-    if(txt(e.target).indexOf('info')>=0){
-      setTimeout(enhance,100);
-      setTimeout(enhance,350);
-    }
-  },true);
-})();
-</script>
-
-
-<script>
-/* V12.6.2.9 — Correction réelle de l'historique Info du jour */
-(function(){
-  function money(n){
-    n = Number(n || 0);
-    return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ') + ' FCFA';
-  }
-  function norm(s){ return String(s||'').toLowerCase().replace(/\s+/g,' ').trim(); }
-  function timeNow(){
-    var d=new Date();
-    return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-  }
-  function getAllSessions(){
-    try{return JSON.parse(localStorage.getItem('taclar_sessions')||'[]')}catch(e){return []}
-  }
-  function getBestSession(){
-    var keys=['taclar_current_session','taclar_session','taclar_active_session'];
-    for(var i=0;i<keys.length;i++){
-      try{
-        var v=JSON.parse(localStorage.getItem(keys[i])||'null');
-        if(v && Array.isArray(v.details))return v;
-      }catch(e){}
-    }
-    var all=getAllSessions();
-    for(var j=all.length-1;j>=0;j--){
-      if(all[j] && Array.isArray(all[j].details))return all[j];
-    }
-    return null;
-  }
-  function detailToParts(d){
-    var rawTime=d.time||d.createdAt||d.updatedAt||'';
-    var m=String(rawTime).match(/(\d{1,2}):(\d{2})/);
-    var t=m?(String(m[1]).padStart(2,'0')+':'+m[2]):'--:--';
-    var seat=d.seat||d.place||d.position||'';
-    var st=norm(d.status||d.action||'');
-    var action=st.indexOf('desc')>=0?'descendu':(st.indexOf('bord')>=0||st.indexOf('mont')>=0?'à bord':(st||'mouvement'));
-    var pay=d.payment||d.mode||'Cash';
-    var amt=Number(d.amount||d.montant||0);
-    return {left:t+' — '+seat+' '+action+' — '+pay, amount:amt};
-  }
-  function existingRowParts(text){
-    var clean=String(text||'').replace(/\s+/g,' ').trim();
-    var amountMatch=clean.match(/(\d[\d\s]*)\s*FCFA/i);
-    var amount=amountMatch?Number(amountMatch[1].replace(/\s/g,'')):0;
-    var main=clean.replace(/\s*\d[\d\s]*\s*FCFA\s*$/i,'').trim();
-    var p=main.split('-').map(function(x){return x.trim();});
-    var seat=p[0]||'Siège';
-    var action=p[1]||'mouvement';
-    var pay=p[2]||'Cash';
-    return {left:'--:-- — '+seat+' '+action+' — '+pay, amount:amount};
-  }
-  function rewriteInfo(){
-    var modal=Array.from(document.querySelectorAll('div,section')).find(function(el){
-      var t=norm(el.textContent);
-      return t.indexOf('info du jour')>=0 && t.indexOf('historique détaillé')>=0;
-    });
-    if(!modal)return;
-
-    // Find row-like divs: they contain FCFA and one of seat labels.
-    var rows=Array.from(modal.querySelectorAll('div')).filter(function(el){
-      var t=norm(el.textContent);
-      return t.indexOf('fcfa')>=0 && /(sp|sg|sm|sd)/i.test(el.textContent||'');
-    });
-    if(!rows.length)return;
-
-    var session=getBestSession();
-    var details=(session&&Array.isArray(session.details))?session.details.filter(function(d){
-      return d && (d.seat||d.place||d.position||d.amount||d.payment||d.status||d.action);
-    }):[];
-
-    rows.forEach(function(row,idx){
-      if(row.classList.contains('taclarInfoHistoryLine'))return;
-      var parts=details[idx]?detailToParts(details[idx]):existingRowParts(row.textContent);
-      row.className += ' taclarInfoHistoryLine';
-      row.innerHTML='<span>'+parts.left+'</span><span class="amount">'+money(parts.amount)+'</span>';
-    });
-  }
-  document.addEventListener('click',function(e){
-    if(norm(e.target && e.target.textContent).indexOf('info')>=0){
-      setTimeout(rewriteInfo,80);
-      setTimeout(rewriteInfo,250);
-      setTimeout(rewriteInfo,600);
-    }
-  },true);
-})();
-</script>
-
-</body></html>
+</script></body></html>
