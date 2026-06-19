@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V12.6.0</title><style>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V12.6.2.5</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:430px;margin:auto;padding:10px;min-height:100vh}
@@ -35,6 +35,78 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 
 .resumeBox{display:none;background:rgba(250,204,21,.14);border:1px solid rgba(250,204,21,.45);color:#fde68a;border-radius:16px;padding:12px;margin-bottom:10px}
 .resumeBox button{margin-top:8px}
+
+/* V12.6.2.5 — Chauffeur tablette paiement stable */
+#paymentModal{
+  display:none;
+  position:static;
+  inset:auto;
+  background:transparent;
+  z-index:auto;
+  padding:0;
+  align-items:stretch;
+  justify-content:stretch;
+  margin-top:12px;
+}
+#paymentModal .modal{
+  width:100%;
+  max-width:none;
+  max-height:none;
+  overflow:visible;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;
+  padding:14px;
+}
+#paymentModal h2{
+  margin-top:0;
+}
+@media (min-width:700px){
+  .app{
+    max-width:620px;
+    padding:14px 18px 12px;
+    min-height:auto;
+  }
+  .card{
+    margin-bottom:10px;
+  }
+  .summary{
+    margin-bottom:10px;
+    gap:10px;
+  }
+  .box{
+    min-height:58px;
+  }
+  .seatBtn{
+    min-height:76px;
+  }
+  .seatBtn .code{
+    font-size:26px;
+  }
+  .driverSeat{
+    min-height:76px;
+  }
+  .fareGrid button,
+  #paymentModal button,
+  .seatPanel button{
+    min-height:56px;
+    font-size:20px;
+    font-weight:800;
+  }
+  #dropAllSeats{
+    margin-top:8px !important;
+    margin-bottom:8px;
+    min-height:56px;
+  }
+  .footer{
+    margin-top:8px;
+  }
+  #close{
+    margin-top:0;
+    min-height:56px;
+  }
+}
+
 </style>
 <script>
 (function(){
@@ -57,6 +129,14 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 <div class="summary"><div class="box"><small>À bord</small><strong><span id="onboard">0</span>/4</strong></div><div class="box"><small>Places libres</small><strong class="green" id="freeSeats">4</strong></div></div>
 <div class="card"><label>Plan des sièges</label><div class="seatMap"><div class="frontRow"><div class="driverSeat"><div><div style="font-size:12px">CHAUFFEUR</div><div id="driverNameDisplay" style="font-size:19px;font-weight:900">---</div></div></div><button class="seatBtn seatFree" id="seat-SP" data-seat="SP"><span class="code">SP</span><span class="amount">Libre</span></button></div><div class="backRow"><button class="seatBtn seatFree" id="seat-SG"><span class="code">SG</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SM"><span class="code">SM</span><span class="amount">Libre</span></button><button class="seatBtn seatFree" id="seat-SD"><span class="code">SD</span><span class="amount">Libre</span></button></div></div>
 <div id="farePanel" class="fareGrid"><button class="fare" data-amount="200">200</button><button class="fare" data-amount="500">500</button><button class="fare" data-amount="1000">1000</button><button class="fare" data-amount="1500">1500</button><button class="fare" data-amount="2000">2000</button><button class="fare" data-amount="2500">2500</button><button class="fare" data-amount="3000">3000</button><button class="fare" data-amount="3500">3500</button><button class="fare" data-amount="4000">4000</button><button class="fare btn-yellow" data-amount="5000">5000</button></div>
+<div class="modal-bg" id="paymentModal"><div class="modal">
+<h2>Mode de paiement</h2>
+<p class="muted">Montant sélectionné : <b id="paymentAmount">0 FCFA</b></p>
+<button id="payCash">Cash</button>
+<button id="payAirtel" class="btn-yellow">Airtel Money</button>
+<button id="payMoov" class="btn-yellow">Moov Money</button>
+<button class="btn-dark" id="paymentCancel">Annuler</button>
+</div></div>
 <div id="seatPanel" class="seatPanel"><div id="seatPanelTitle" style="font-weight:bold;margin-bottom:10px">Siège</div><div class="adjustGrid"><button id="plus500">+500</button><button id="minus500" class="btn-yellow">-500</button></div><div class="adjustGrid"><button id="plus1000">+1000</button><button id="minus1000" class="btn-yellow">-1000</button></div><button id="dropSeat" class="btn-dark">Descendu / libérer siège</button></div></div>
 <button id="dropAllSeats" class="btn-dark" style="margin-top:10px">Tous descendus</button></div>
 <div class="incidentAlert" id="incidentAlert">Incident en cours<small id="incidentAlertText"></small><br><button id="resolveIncident" class="btn-dark" style="min-height:44px;margin-top:8px">Incident résolu</button></div>
@@ -122,14 +202,6 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 <button class="btn-dark" id="closeReasonCancel">Annuler</button>
 </div></div>
 
-<div class="modal-bg" id="paymentModal"><div class="modal">
-<h2>Mode de paiement</h2>
-<p class="muted">Montant sélectionné : <b id="paymentAmount">0 FCFA</b></p>
-<button id="payCash">Cash</button>
-<button id="payAirtel" class="btn-yellow">Airtel Money</button>
-<button id="payMoov" class="btn-yellow">Moov Money</button>
-<button class="btn-dark" id="paymentCancel">Annuler</button>
-</div></div>
 
 <div class="modal-bg" id="customIncidentModal"><div class="modal">
 <h2>Autre incident</h2>
