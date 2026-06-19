@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 
 <html lang="fr">
-<head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1.0" name="viewport"/><title>TACLAR Admin V12.6.0</title><style>
+<head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1.0" name="viewport"/><title>TACLAR Admin V12.6.2.12</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:1280px;margin:auto;padding:14px;min-height:100vh}
@@ -105,7 +105,7 @@ th:nth-child(17),td:nth-child(17){width:122px}
 <body>
 
 <div class="app">
-<h1>TACLAR Admin</h1>
+<h1>TACLAR Admin <span class="badge">ADMIN V12.6.2.12</span></h1>
 <div class="subtitle">Comptabilité / Direction — Groupage</div>
 <div class="card">
 <button onclick="render()">Actualiser</button>
@@ -316,29 +316,62 @@ function todayDateFR(){
   return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+d.getFullYear();
 }
 
-function downloadExcelArchive(){
-  var archive=getExcelArchive();
-  if(archive.length===0){alert("Aucune session sauvegardée dans le registre Excel.");return;}
-
-  var today=todayDateFR();
-
-  // Export journalier : uniquement les sessions dont la date correspond au jour de travail.
-  archive=archive.filter(function(r){
-    return normalizeArchiveDateFR(r.date)===today;
-  });
-
-  if(archive.length===0){
-    alert("Aucune session sauvegardée pour aujourd’hui ("+today+").");
-    return;
+function normalizeArchiveDateFR(value){
+  var raw=String(value||"").trim();
+  if(!raw)return "";
+  var m=raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m){
+    var a=Number(m[1]), b=Number(m[2]), y=Number(m[3]);
+    var day, month;
+    if(a>12){day=a; month=b;}
+    else if(b>12){day=b; month=a;}
+    else {day=a; month=b;}
+    return String(day).padStart(2,"0")+"/"+String(month).padStart(2,"0")+"/"+y;
   }
+  var d=new Date(raw);
+  if(!isNaN(d)){
+    return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+d.getFullYear();
+  }
+  return raw;
+}
 
-  archive=archive.map(function(r){
-    var total=Number(r.total||0);
+function todayDateFR(){
+  var d=new Date();
+  return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+d.getFullYear();
+}
+
+function getVisibleAdminRowsForExcel(){
+  var today=todayDateFR();
+  var source=(Array.isArray(currentSessions)&&currentSessions.length)?currentSessions:getSessions();
+  source=ensureSessionIds(source);
+  return source.map(function(x,i){
+    return archiveRow(x,i);
+  }).filter(function(r){
     r.date=normalizeArchiveDateFR(r.date);
+    return r.date===today;
+  }).map(function(r){
+    var total=Number(r.total||0);
     r.commission=calcCommission(total);
     r.net=calcNet(total);
     return r;
   });
+}
+
+function downloadExcelArchive(){
+  render(); // remet currentSessions à jour avant export
+  var today=todayDateFR();
+  var archive=getVisibleAdminRowsForExcel();
+
+  if(archive.length===0){
+    alert("Aucune session visible dans Admin pour aujourd’hui ("+today+").");
+    return;
+  }
+
+  // V12.6.2.12 : on remplace entièrement l'archive du jour par les lignes visibles.
+  var oldArchive=getExcelArchive().filter(function(r){
+    return normalizeArchiveDateFR(r.date)!==today;
+  });
+  saveExcelArchive(oldArchive.concat(archive));
 
   var summary=buildSummaryRows(archive);
   var sessionRows=archive.map(function(r){
@@ -362,7 +395,7 @@ function downloadExcelArchive(){
   '<Style ss:ID="DataNum"><Alignment ss:Horizontal="Right"/><Font ss:Bold="1" ss:Size="10"/><Interior ss:Color="#D9D9D9" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>'+ 
   '</Styles>'+ 
   '<Worksheet ss:Name="Sessions"><Table>'+ 
-  '<Column ss:Width="120"/><Column ss:Width="80"/><Column ss:Width="110"/><Column ss:Width="90"/><Column ss:Width="140"/><Column ss:Width="60"/><Column ss:Width="60"/><Column ss:Width="70"/><Column ss:Width="80"/><Column ss:Width="90"/><Column ss:Width="100"/><Column ss:Width="110"/><Column ss:Width="150"/><Column ss:Width="150"/>'+ 
+  '<Column ss:Width="130"/><Column ss:Width="90"/><Column ss:Width="120"/><Column ss:Width="90"/><Column ss:Width="160"/><Column ss:Width="70"/><Column ss:Width="70"/><Column ss:Width="80"/><Column ss:Width="90"/><Column ss:Width="100"/><Column ss:Width="110"/><Column ss:Width="120"/><Column ss:Width="170"/><Column ss:Width="170"/>'+ 
   '<Row><Cell ss:StyleID="Title" ss:MergeAcross="13"><Data ss:Type="String">TACLAR - Registre officiel des sessions groupage du '+today+'</Data></Cell></Row>'+ 
   '<Row><Cell ss:StyleID="Sub" ss:MergeAcross="13"><Data ss:Type="String">Commission TACLAR : 25%</Data></Cell></Row>'+ 
   '<Row>'+['ID Session','Date','Chauffeur','Plaque','Axe','Début','Fin','Durée','Passagers','Total','Commission','Net Chauffeur','Motif','Observations'].map(function(h){return xmlCell(h,'Header')}).join('')+'</Row>'+sessionRows+'</Table></Worksheet>'+
@@ -371,10 +404,15 @@ function downloadExcelArchive(){
   '<Row><Cell ss:StyleID="Title" ss:MergeAcross="3"><Data ss:Type="String">TACLAR - Résumé journalier du '+today+'</Data></Cell></Row>'+ 
   '<Row><Cell ss:StyleID="Sub" ss:MergeAcross="3"><Data ss:Type="String">Jour / Montant total / Commission TACLAR</Data></Cell></Row>'+ 
   '<Row>'+xmlCell('Jour','Header')+xmlCell('Sessions','Header')+xmlCell('Montant total','Header')+xmlCell('Commission TACLAR','Header')+'</Row>'+summaryRows+'</Table></Worksheet>'+  '</Workbook>';
-  var blob=new Blob([xml],{type:'application/vnd.ms-excel;charset=utf-8;'});
-  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='TACLAR_Registre_Excel_'+taclarDateKey(new Date())+'.xls'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-}
 
+  var blob=new Blob([xml],{type:'application/vnd.ms-excel;charset=utf-8;'});
+  var a=document.createElement('a'); 
+  a.href=URL.createObjectURL(blob); 
+  a.download='TACLAR_Registre_Visible_'+taclarDateKey(new Date())+'.xls'; 
+  document.body.appendChild(a); 
+  a.click(); 
+  document.body.removeChild(a);
+}
 
 
 function startFirebaseAdmin(){
@@ -522,6 +560,7 @@ async function clearData(){
     localStorage.removeItem("taclar_sessions");
     localStorage.removeItem("taclar_live");
     localStorage.removeItem("taclar_dispatch_hidden");
+    localStorage.removeItem("taclar_excel_archive");
     await clearAdminFirebaseData();
     render();
     alert("Rapports test effacés dans Firebase.");
