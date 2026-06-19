@@ -292,15 +292,54 @@ function buildSummaryRows(archive){
     var pa=a.split('/').reverse().join(''), pb=b.split('/').reverse().join(''); return pa.localeCompare(pb);
   }).map(function(k){return map[k]});
 }
+function normalizeArchiveDateFR(value){
+  var raw=String(value||"").trim();
+  if(!raw)return "";
+  var m=raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m){
+    var a=Number(m[1]), b=Number(m[2]), y=Number(m[3]);
+    var day, month;
+    if(a>12){day=a; month=b;}
+    else if(b>12){day=b; month=a;}
+    else {day=a; month=b;}
+    return String(day).padStart(2,"0")+"/"+String(month).padStart(2,"0")+"/"+y;
+  }
+  var d=new Date(raw);
+  if(!isNaN(d)){
+    return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+d.getFullYear();
+  }
+  return raw;
+}
+
+function todayDateFR(){
+  var d=new Date();
+  return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+d.getFullYear();
+}
+
 function downloadExcelArchive(){
   var archive=getExcelArchive();
   if(archive.length===0){alert("Aucune session sauvegardée dans le registre Excel.");return;}
+
+  var today=todayDateFR();
+
+  // Export journalier : uniquement les sessions dont la date correspond au jour de travail.
+  archive=archive.filter(function(r){
+    return normalizeArchiveDateFR(r.date)===today;
+  });
+
+  if(archive.length===0){
+    alert("Aucune session sauvegardée pour aujourd’hui ("+today+").");
+    return;
+  }
+
   archive=archive.map(function(r){
     var total=Number(r.total||0);
+    r.date=normalizeArchiveDateFR(r.date);
     r.commission=calcCommission(total);
     r.net=calcNet(total);
     return r;
   });
+
   var summary=buildSummaryRows(archive);
   var sessionRows=archive.map(function(r){
     return '<Row>'+[
@@ -324,12 +363,12 @@ function downloadExcelArchive(){
   '</Styles>'+ 
   '<Worksheet ss:Name="Sessions"><Table>'+ 
   '<Column ss:Width="120"/><Column ss:Width="80"/><Column ss:Width="110"/><Column ss:Width="90"/><Column ss:Width="140"/><Column ss:Width="60"/><Column ss:Width="60"/><Column ss:Width="70"/><Column ss:Width="80"/><Column ss:Width="90"/><Column ss:Width="100"/><Column ss:Width="110"/><Column ss:Width="150"/><Column ss:Width="150"/>'+ 
-  '<Row><Cell ss:StyleID="Title" ss:MergeAcross="13"><Data ss:Type="String">TACLAR - Registre officiel des sessions groupage</Data></Cell></Row>'+ 
+  '<Row><Cell ss:StyleID="Title" ss:MergeAcross="13"><Data ss:Type="String">TACLAR - Registre officiel des sessions groupage du '+today+'</Data></Cell></Row>'+ 
   '<Row><Cell ss:StyleID="Sub" ss:MergeAcross="13"><Data ss:Type="String">Commission TACLAR : 25%</Data></Cell></Row>'+ 
   '<Row>'+['ID Session','Date','Chauffeur','Plaque','Axe','Début','Fin','Durée','Passagers','Total','Commission','Net Chauffeur','Motif','Observations'].map(function(h){return xmlCell(h,'Header')}).join('')+'</Row>'+sessionRows+'</Table></Worksheet>'+
   '<Worksheet ss:Name="Résumé"><Table>'+ 
   '<Column ss:Width="110"/><Column ss:Width="100"/><Column ss:Width="140"/><Column ss:Width="150"/>'+ 
-  '<Row><Cell ss:StyleID="Title" ss:MergeAcross="3"><Data ss:Type="String">TACLAR - Résumé journalier</Data></Cell></Row>'+ 
+  '<Row><Cell ss:StyleID="Title" ss:MergeAcross="3"><Data ss:Type="String">TACLAR - Résumé journalier du '+today+'</Data></Cell></Row>'+ 
   '<Row><Cell ss:StyleID="Sub" ss:MergeAcross="3"><Data ss:Type="String">Jour / Montant total / Commission TACLAR</Data></Cell></Row>'+ 
   '<Row>'+xmlCell('Jour','Header')+xmlCell('Sessions','Header')+xmlCell('Montant total','Header')+xmlCell('Commission TACLAR','Header')+'</Row>'+summaryRows+'</Table></Worksheet>'+  '</Workbook>';
   var blob=new Blob([xml],{type:'application/vnd.ms-excel;charset=utf-8;'});
