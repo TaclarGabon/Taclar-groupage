@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V12.6.2.8</title><style>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>TACLAR Chauffeur V12.6.2.9</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#061416;color:white}
 .app{max-width:430px;margin:auto;padding:10px;min-height:100vh}
@@ -129,6 +129,29 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{b
 @media (min-width:700px){
   .taclarHistoryBox{max-height:420px!important;}
   .taclarHistoryLine{font-size:15px!important;padding:10px 12px!important;}
+}
+
+
+/* V12.6.2.9 — Historique Info corrigé */
+.taclarInfoHistoryLine{
+  display:flex!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  background:rgba(255,255,255,.08)!important;
+  border:1px solid rgba(255,255,255,.10)!important;
+  border-radius:10px!important;
+  padding:8px 10px!important;
+  font-size:13px!important;
+  line-height:1.25!important;
+  color:white!important;
+}
+.taclarInfoHistoryLine .amount{
+  color:#5eead4!important;
+  font-weight:800!important;
+  white-space:nowrap!important;
+}
+@media (min-width:700px){
+  .taclarInfoHistoryLine{font-size:15px!important;padding:10px 12px!important;}
 }
 
 </style>
@@ -652,6 +675,94 @@ render()})
     if(txt(e.target).indexOf('info')>=0){
       setTimeout(enhance,100);
       setTimeout(enhance,350);
+    }
+  },true);
+})();
+</script>
+
+
+<script>
+/* V12.6.2.9 — Correction réelle de l'historique Info du jour */
+(function(){
+  function money(n){
+    n = Number(n || 0);
+    return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ') + ' FCFA';
+  }
+  function norm(s){ return String(s||'').toLowerCase().replace(/\s+/g,' ').trim(); }
+  function timeNow(){
+    var d=new Date();
+    return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+  function getAllSessions(){
+    try{return JSON.parse(localStorage.getItem('taclar_sessions')||'[]')}catch(e){return []}
+  }
+  function getBestSession(){
+    var keys=['taclar_current_session','taclar_session','taclar_active_session'];
+    for(var i=0;i<keys.length;i++){
+      try{
+        var v=JSON.parse(localStorage.getItem(keys[i])||'null');
+        if(v && Array.isArray(v.details))return v;
+      }catch(e){}
+    }
+    var all=getAllSessions();
+    for(var j=all.length-1;j>=0;j--){
+      if(all[j] && Array.isArray(all[j].details))return all[j];
+    }
+    return null;
+  }
+  function detailToParts(d){
+    var rawTime=d.time||d.createdAt||d.updatedAt||'';
+    var m=String(rawTime).match(/(\d{1,2}):(\d{2})/);
+    var t=m?(String(m[1]).padStart(2,'0')+':'+m[2]):'--:--';
+    var seat=d.seat||d.place||d.position||'';
+    var st=norm(d.status||d.action||'');
+    var action=st.indexOf('desc')>=0?'descendu':(st.indexOf('bord')>=0||st.indexOf('mont')>=0?'à bord':(st||'mouvement'));
+    var pay=d.payment||d.mode||'Cash';
+    var amt=Number(d.amount||d.montant||0);
+    return {left:t+' — '+seat+' '+action+' — '+pay, amount:amt};
+  }
+  function existingRowParts(text){
+    var clean=String(text||'').replace(/\s+/g,' ').trim();
+    var amountMatch=clean.match(/(\d[\d\s]*)\s*FCFA/i);
+    var amount=amountMatch?Number(amountMatch[1].replace(/\s/g,'')):0;
+    var main=clean.replace(/\s*\d[\d\s]*\s*FCFA\s*$/i,'').trim();
+    var p=main.split('-').map(function(x){return x.trim();});
+    var seat=p[0]||'Siège';
+    var action=p[1]||'mouvement';
+    var pay=p[2]||'Cash';
+    return {left:'--:-- — '+seat+' '+action+' — '+pay, amount:amount};
+  }
+  function rewriteInfo(){
+    var modal=Array.from(document.querySelectorAll('div,section')).find(function(el){
+      var t=norm(el.textContent);
+      return t.indexOf('info du jour')>=0 && t.indexOf('historique détaillé')>=0;
+    });
+    if(!modal)return;
+
+    // Find row-like divs: they contain FCFA and one of seat labels.
+    var rows=Array.from(modal.querySelectorAll('div')).filter(function(el){
+      var t=norm(el.textContent);
+      return t.indexOf('fcfa')>=0 && /(sp|sg|sm|sd)/i.test(el.textContent||'');
+    });
+    if(!rows.length)return;
+
+    var session=getBestSession();
+    var details=(session&&Array.isArray(session.details))?session.details.filter(function(d){
+      return d && (d.seat||d.place||d.position||d.amount||d.payment||d.status||d.action);
+    }):[];
+
+    rows.forEach(function(row,idx){
+      if(row.classList.contains('taclarInfoHistoryLine'))return;
+      var parts=details[idx]?detailToParts(details[idx]):existingRowParts(row.textContent);
+      row.className += ' taclarInfoHistoryLine';
+      row.innerHTML='<span>'+parts.left+'</span><span class="amount">'+money(parts.amount)+'</span>';
+    });
+  }
+  document.addEventListener('click',function(e){
+    if(norm(e.target && e.target.textContent).indexOf('info')>=0){
+      setTimeout(rewriteInfo,80);
+      setTimeout(rewriteInfo,250);
+      setTimeout(rewriteInfo,600);
     }
   },true);
 })();
